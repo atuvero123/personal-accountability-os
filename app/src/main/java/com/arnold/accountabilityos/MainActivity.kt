@@ -38,9 +38,26 @@ class MainActivity:ComponentActivity(){
 fun AccountabilityApp(vm:AppViewModel=viewModel()){
     var tab by remember{mutableIntStateOf(0)}
     val titles=listOf("Today","Spiritual","Focus","Finance","Review")
-    Scaffold(topBar={TopAppBar(title={Text("Accountability OS • "+titles[tab])})},bottomBar={
-        NavigationBar{titles.forEachIndexed{i,t->NavigationBarItem(selected=tab==i,onClick={tab=i},icon={Text(listOf("✓","✦","◉","₵","↻")[i])},label={Text(t)})}}
-    }){pad->Box(Modifier.padding(pad).fillMaxSize()){when(tab){0->TodayScreen(vm);1->SpiritualScreen(vm);2->FocusScreen(vm);3->FinanceScreen(vm);4->ReviewScreen(vm)}}}}
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Accountability OS • " + titles[tab]) }) },
+        bottomBar = {
+            NavigationBar {
+                titles.forEachIndexed { i, t ->
+                    NavigationBarItem(selected = tab == i, onClick = { tab = i }, icon = { Text(listOf("✓","✦","◉","₵","↻")[i]) }, label = { Text(t) })
+                }
+            }
+        }
+    ) { pad ->
+        Box(Modifier.padding(pad).fillMaxSize()) {
+            when (tab) {
+                0 -> TodayScreen(vm)
+                1 -> SpiritualScreen(vm)
+                2 -> FocusScreen(vm)
+                3 -> FinanceScreen(vm)
+                4 -> ReviewScreen(vm)
+            }
+        }
+    }
 }
 
 @Composable
