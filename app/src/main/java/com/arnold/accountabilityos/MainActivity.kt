@@ -38,7 +38,7 @@ class MainActivity:ComponentActivity(){
 fun AccountabilityApp(vm:AppViewModel=viewModel()){
     var tab by remember{mutableIntStateOf(0)}
     val titles=listOf("Today","Spiritual","Focus","Finance","Review")
-    Scaffold(topBar={TopAppBar(title={Text("Accountability OS")},subtitle={Text(vm.todayKey()+" • "+titles[tab])})},bottomBar={
+    Scaffold(topBar={TopAppBar(title={Text("Accountability OS • "+titles[tab])})},bottomBar={
         NavigationBar{titles.forEachIndexed{i,t->NavigationBarItem(selected=tab==i,onClick={tab=i},icon={Text(listOf("✓","✦","◉","₵","↻")[i])},label={Text(t)})}}
     }){pad->Box(Modifier.padding(pad).fillMaxSize()){when(tab){0->TodayScreen(vm);1->SpiritualScreen(vm);2->FocusScreen(vm);3->FinanceScreen(vm);4->ReviewScreen(vm)}}}}
 }
@@ -72,7 +72,7 @@ fun TodayScreen(vm:AppViewModel){
                     Row(horizontalArrangement=Arrangement.spacedBy(6.dp),modifier=Modifier.padding(top=6.dp)){
                         Button(onClick={vm.updateTaskStatus(task.id,"done")},enabled=task.status!="done"){Text("Done")}
                         OutlinedButton(onClick={vm.postponeTask(task.id,plus30(task.start))}){Text("+30m")}
-                        OutlinedButton(onClick={if(task.status=="missed"){}else->{vm.updateTaskStatus(task.id,"missed","Not completed — review tonight.")}}){Text("Missed")}
+                        OutlinedButton(onClick={vm.updateTaskStatus(task.id,"missed","Not completed — review tonight.")}){Text("Missed")}
                     }
                 }
             }
@@ -117,7 +117,7 @@ fun FocusScreen(vm:AppViewModel){
             Text("Likely social/video usage today: "+vm.socialMinutes()+" min")
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp),modifier=Modifier.padding(top=8.dp)){
                 Button(onClick={vm.refreshUsage()}){Text("Refresh usage")}
-                OutlinedButton(onClick={vm.openUsageSettings}){Text("Usage Access")}
+                OutlinedButton(onClick={vm::openUsageSettings}){Text("Usage Access")}
             }
         }
         SectionCard("Most-used apps"){
