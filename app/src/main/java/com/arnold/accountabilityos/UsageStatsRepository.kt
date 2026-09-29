@@ -21,9 +21,10 @@ class UsageStatsRepository(private val context:Context){
         val start=LocalDate.now(ZoneId.systemDefault()).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         val stats=manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY,start,System.currentTimeMillis()).orEmpty()
         val pm=context.packageManager
-        return stats.filter{it.totalTimeInForeground>=60000}.map{
-            val label=runCatching{pm.getApplicationLabel(pm.getApplicationInfo(it.packageName,0)).toString()}.getOrElse{it.packageName}
-            UsageRow(it.packageName,label,it.totalTimeInForeground/60000)
+        return stats.filter{it.totalTimeInForeground>=60000}.map{stat ->
+            val pkg=stat.packageName
+            val label=runCatching{pm.getApplicationLabel(pm.getApplicationInfo(pkg,0)).toString()}.getOrElse{pkg}
+            UsageRow(pkg,label,stat.totalTimeInForeground/60000)
         }.sortedByDescending{it.minutes}
     }
     fun likelySocialMinutes(rows:List<UsageRow>):Long{
