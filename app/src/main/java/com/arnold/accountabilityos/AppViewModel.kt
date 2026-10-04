@@ -18,13 +18,34 @@ class AppViewModel(app: Application):AndroidViewModel(app){
     private val usage=UsageStatsRepository(app)
     var state by mutableStateOf(store.load()); private set
     var usageRows by mutableStateOf<List<UsageRow>>(emptyList()); private set
-    init{ensureToday();refreshUsage()}
+    init{ensureToday();ensureGrowthWeek();refreshUsage()}
 
     fun todayKey()=LocalDate.now().toString()
     fun today():DayState{ensureToday();return state.days[todayKey()]!!}
     private fun save(s:AppState){state=s;store.save(s)}
     private fun updateDay(f:(DayState)->DayState){val d=f(today());save(state.copy(days=state.days+(d.date to d)))}
     private fun ensureToday(){val k=todayKey();if(!state.days.containsKey(k))save(state.copy(days=state.days+(k to DayState(k,defaultTasks()))))}
+private fun weekKey():String{val d=LocalDate.now();val week=d.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear());val year=d.get(java.time.temporal.WeekFields.ISO.weekBasedYear());return "%04d-W%02d".format(year,week)}
+private fun ensureGrowthWeek(){
+    val key=weekKey()
+    if(state.growth.drumming.weekKey!=key){
+        val oldSong=state.growth.drumming.worshipSong
+        save(state.copy(growth=state.growth.copy(drumming=DrummingWeek(weekKey=key,worshipSong=oldSong))))
+    }
+}
+private fun updateGrowth(f:(GrowthState)->GrowthState){ensureGrowthWeek();save(state.copy(growth=f(state.growth)))}
+fun drummingProgressLabel()=when(state.growth.drumming.skillProgress){0->"Technique / how it is played";1->"Technique secure";2->"Groove application";3->"Fills";else->"Song application / ready to perform"}
+fun setDrummingProgress(v:Int)=updateGrowth{it.copy(drumming=it.drumming.copy(skillProgress=v.coerceIn(0,4)))}
+fun setWorshipSong(v:String)=updateGrowth{it.copy(drumming=it.drumming.copy(worshipSong=v))}
+fun toggleWorshipSection(section:String)=updateGrowth{g->
+    val done=g.drumming.completedSections.toMutableList()
+    if(done.contains(section))done.remove(section)else done.add(section)
+    g.copy(drumming=g.drumming.copy(completedSections=done))
+}
+fun setDrummingNotes(technique:String,groove:String,fill:String)=updateGrowth{g->g.copy(drumming=g.drumming.copy(techniqueNote=technique,grooveApplication=groove,fillApplication=fill))}
+fun setCoffeeStatus(status:String)=updateGrowth{g->g.copy(coffee=g.coffee.copy(lessonStatus=status))}
+fun setCoffeeNotes(learn:String,practice:String,application:String)=updateGrowth{g->g.copy(coffee=g.coffee.copy(learnNotes=learn,practiceResult=practice,applicationResult=application))}
+fun coffeeStudyMethod()="Learn → Practice → Apply → Review. I will lead the sequence, set the next lesson, and use your coffee station for practical application where possible."
 
     fun prayerTopic()=when(LocalDate.now().dayOfWeek){
         DayOfWeek.MONDAY->"Personal alignment — relationship with God, discipline, habits, character and self-control."
@@ -147,7 +168,7 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         TaskItem("breakfast","Breakfast / prepare for work","08:10",35,"Personal"),TaskItem("betslips","Daily betslip making — morning hour","08:45",60,"Betslips",true),
         TaskItem("work-open","Coffee station opening scan / work","09:45",15,"Work",true),TaskItem("finance-am","Finance morning check-in","10:00",5,"Finance",true),
         TaskItem("lunch","Lunch / selected sermon or quiet","13:00",30,"Spiritual"),TaskItem("work-close","Work closing review","17:15",10,"Work",true),
-        TaskItem("rest","Rest / meal / decompress","17:30",30,"Rest"),TaskItem("drumming","Drumming practice","18:00",45,"Drumming"),
+        TaskItem("rest","Rest / meal / decompress","17:30",30,"Rest"),TaskItem("drumming","Drumming — weekly skill + worship song","18:00",45,"Drumming"),
         TaskItem("focus","Main focus — app development or SOLM","18:50",60,"Projects"),TaskItem("oracle","Project Oracle development","19:55",40,"Project Oracle"),
         TaskItem("entertainment","Planned entertainment / casual time","20:35",30,"Rest"),TaskItem("bible-pm","Bible reading (2 chapters)","21:05",25,"Spiritual",true),
         TaskItem("finance-pm","Finance evening check-in","21:30",5,"Finance",true),TaskItem("review","Personal evening review + tomorrow","21:35",20,"Personal",true),
