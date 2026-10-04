@@ -1,10 +1,9 @@
 package com.arnold.accountabilityos
 
 import android.Manifest
-import android.app.Activity
+import android.os.Bundle
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -27,7 +27,8 @@ class MainActivity:ComponentActivity(){
     private val notificationPermission=registerForActivityResult(ActivityResultContracts.RequestPermission()){}
     override fun onCreate(savedInstanceState:Bundle?){
         super.onCreate(savedInstanceState)
-        if(android.os.Build.VERSION.SDK_INT>=33&&ContextCompat.checkSelfPermission(this,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        if(android.os.Build.VERSION.SDK_INT>=33&&ContextCompat.checkSelfPermission(this,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         ReminderScheduler.scheduleAll(this)
         setContent{AccountabilityApp()}
     }
@@ -39,23 +40,28 @@ fun AccountabilityApp(vm:AppViewModel=viewModel()){
     var tab by remember{mutableIntStateOf(0)}
     val titles=listOf("Today","Spiritual","Focus","Finance","Growth","Review")
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Accountability OS • " + titles[tab]) }) },
-        bottomBar = {
-            NavigationBar {
-                titles.forEachIndexed { i, t ->
-                    NavigationBarItem(selected = tab == i, onClick = { tab = i }, icon = { Text(listOf("✓","✦","◉","₵","♪","↻")[i]) }, label = { Text(t) })
+        topBar={TopAppBar(title={Text("Accountability OS • "+titles[tab])})},
+        bottomBar={
+            NavigationBar{
+                titles.forEachIndexed{i,t->
+                    NavigationBarItem(
+                        selected=tab==i,
+                        onClick={tab=i},
+                        icon={Text(listOf("✓","✦","◉","₵","♪","↻")[i])},
+                        label={Text(t)}
+                    )
                 }
             }
         }
-    ) { pad ->
-        Box(Modifier.padding(pad).fillMaxSize()) {
-            when (tab) {
-                0 -> TodayScreen(vm)
-                1 -> SpiritualScreen(vm)
-                2 -> FocusScreen(vm)
-                3 -> FinanceScreen(vm)
-                4 -> GrowthScreen(vm)
-                5 -> ReviewScreen(vm)
+    ){pad->
+        Box(Modifier.padding(pad).fillMaxSize()){
+            when(tab){
+                0->TodayScreen(vm)
+                1->SpiritualScreen(vm)
+                2->FocusScreen(vm)
+                3->FinanceScreen(vm)
+                4->GrowthScreen(vm)
+                5->ReviewScreen(vm)
             }
         }
     }
@@ -63,20 +69,37 @@ fun AccountabilityApp(vm:AppViewModel=viewModel()){
 
 @Composable
 fun SectionCard(title:String,body:@Composable ColumnScope.()->Unit){
-    Card(Modifier.fillMaxWidth().padding(vertical=5.dp)){Column(Modifier.padding(14.dp)){Text(title,style=MaterialTheme.typography.titleMedium);Spacer(Modifier.height(8.dp));body()}}
+    Card(Modifier.fillMaxWidth().padding(vertical=5.dp)){
+        Column(Modifier.padding(14.dp)){
+            Text(title,style=MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            body()
+        }
+    }
 }
 
 @Composable
 fun TodayScreen(vm:AppViewModel){
     val d=vm.today()
+    var showMissed by remember{mutableStateOf<String?>(null)}
+    var missedReason by remember{mutableStateOf("")}
+    val done=d.tasks.count{it.status=="done"}
+    val postponed=d.tasks.sumOf{it.postponedCount}
+    val missed=d.tasks.count{it.status=="missed"}
     LazyColumn(Modifier.fillMaxSize().padding(horizontal=12.dp)){
         item{
-            SectionCard("Daily accountability"){
+            SectionCard("What happened today"){
                 Text("Anchor score: "+vm.accountabilityScore()+"%")
-                Text("Operating window: 06:30–23:00")
-                Text("Principle: do it, schedule it, or deliberately reject it.")
-                Spacer(Modifier.height(8.dp))
-                d.big3.forEachIndexed{i,v->OutlinedTextField(v,{vm.setBig3(i,it)},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Big 3 #"+(i+1))},singleLine=true)}
+                Text("Done: $done  •  Postponed: $postponed  •  Missed: $missed")
+                Text("The buttons below record a real outcome; they do not just change the colour of a task.")
+                Spacer(Modifier.height(6.dp))
+                d.big3.forEachIndexed{i,v->
+                    OutlinedTextField(
+                        v,{vm.setBig3(i,it)},
+                        Modifier.fillMaxWidth().padding(vertical=2.dp),
+                        label={Text("Big 3 #"+(i+1))},singleLine=true
+                    )
+                }
             }
         }
         item{SectionCard("Today's prayer focus"){Text(vm.prayerTopic())}}
@@ -84,17 +107,56 @@ fun TodayScreen(vm:AppViewModel){
             Card(Modifier.fillMaxWidth().padding(vertical=3.dp)){
                 Column(Modifier.padding(10.dp)){
                     Text(task.start+"  •  "+task.name,style=MaterialTheme.typography.titleSmall)
-                    Text(task.area+(if(task.anchor)"  • anchor" else "")+(if(task.postponedCount>0)"  • postponed "+task.postponedCount+"x" else ""))
-                    if(task.status=="done")Text("Done at "+task.completedAt)
-                    if(task.status=="missed")Text("Missed: "+task.reason)
+                    Text(task.area+(if(task.anchor)"  • anchor" else ""))
+                    when(task.status){
+                        "done"->Text("✓ COMPLETED at "+task.completedAt)
+                        "missed"->Text("✕ MISSED • "+task.reason.ifBlank{"No reason recorded"})
+                        else->if(task.postponedCount>0)
+                            Text("↪ POSTPONED "+task.postponedCount+"× • now scheduled "+task.start)
+                    }
+                    if(task.statusUpdatedAt.isNotBlank()&&task.status!="pending")
+                        Text("Last action recorded at "+task.statusUpdatedAt.take(8))
                     Row(horizontalArrangement=Arrangement.spacedBy(6.dp),modifier=Modifier.padding(top=6.dp)){
-                        Button(onClick={vm.updateTaskStatus(task.id,"done")},enabled=task.status!="done"){Text("Done")}
-                        OutlinedButton(onClick={vm.postponeTask(task.id,plus30(task.start))}){Text("+30m")}
-                        OutlinedButton(onClick={vm.updateTaskStatus(task.id,"missed","Not completed — review tonight.")}){Text("Missed")}
+                        Button(
+                            onClick={vm.updateTaskStatus(task.id,"done")},
+                            enabled=task.status!="done"
+                        ){Text("Done")}
+                        OutlinedButton(
+                            onClick={vm.postponeTask(task.id,plus30(task.start)),
+                            enabled=task.status!="done"&&task.status!="missed"
+                        ){Text("Move +30m")}
+                        OutlinedButton(
+                            onClick={showMissed=task.id},
+                            enabled=task.status!="done"&&task.status!="missed"
+                        ){Text("Missed")}
                     }
                 }
             }
         }
+    }
+    if(showMissed!=null){
+        AlertDialog(
+            onDismissRequest={showMissed=null},
+            title={Text("Why was this missed?")},
+            text={
+                OutlinedTextField(
+                    missedReason,{missedReason=it},
+                    Modifier.fillMaxWidth(),
+                    label={Text("Reason")}
+                )
+            },
+            confirmButton={
+                Button(
+                    enabled=missedReason.isNotBlank(),
+                    onClick={
+                        vm.updateTaskStatus(showMissed!!,"missed",missedReason.trim())
+                        missedReason=""
+                        showMissed=null
+                    }
+                ){Text("Record missed")}
+            },
+            dismissButton={TextButton(onClick={showMissed=null}){Text("Cancel")}}
+        )
     }
 }
 
@@ -110,18 +172,37 @@ fun SpiritualScreen(vm:AppViewModel){
     var lesson by remember{mutableStateOf("")}
     var application by remember{mutableStateOf("")}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)){
-        SectionCard("Prayer focus"){Text(vm.prayerTopic());OutlinedTextField(d.prayerNote,vm::setPrayerNote,Modifier.fillMaxWidth(),label={Text("Prayer notes")})}
+        SectionCard("Prayer focus"){
+            Text(vm.prayerTopic())
+            OutlinedTextField(d.prayerNote,vm::setPrayerNote,Modifier.fillMaxWidth(),label={Text("Prayer notes")})
+        }
         SectionCard("Bible — target 5 chapters"){
-            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){repeat(5){i->FilterChip(selected=d.bibleCompleted>i,onClick={vm.setBibleCompleted(if(d.bibleCompleted==i+1)i else i+1)},label={Text((i+1).toString())})}}
+            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                repeat(5){i->
+                    FilterChip(
+                        selected=d.bibleCompleted>i,
+                        onClick={vm.setBibleCompleted(if(d.bibleCompleted==i+1)i else i+1)},
+                        label={Text((i+1).toString())}
+                    )
+                }
+            }
             Text("Progress: "+d.bibleCompleted+"/5")
         }
         SectionCard("Scripture sharing journal"){
-            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){FilterChip(source=="Me",{source="Me"},label={Text("My sharing")});FilterChip(source=="Friend",{source="Friend"},label={Text("Friend's sharing")})}
+            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                FilterChip(source=="Me",{source="Me"},label={Text("My sharing")})
+                FilterChip(source=="Friend",{source="Friend"},label={Text("Friend's sharing")})
+            }
             OutlinedTextField(ref,{ref=it},Modifier.fillMaxWidth(),label={Text("Bible reference")})
             OutlinedTextField(lesson,{lesson=it},Modifier.fillMaxWidth(),label={Text("What I learned")})
             OutlinedTextField(application,{application=it},Modifier.fillMaxWidth(),label={Text("Personal application")})
-            Button(onClick={vm.addScripture(source,ref,"",lesson,application);ref="";lesson="";application=""}){Text("Save reflection")}
-            d.scriptureEntries.takeLast(5).reversed().forEach{Text(it.source+" • "+it.reference+" — "+it.lesson,Modifier.padding(top=8.dp))}
+            Button(onClick={
+                vm.addScripture(source,ref,"",lesson,application)
+                ref="";lesson="";application=""
+            }){Text("Save reflection")}
+            d.scriptureEntries.takeLast(5).reversed().forEach{
+                Text(it.source+" • "+it.reference+" — "+it.lesson,Modifier.padding(top=8.dp))
+            }
         }
     }
 }
@@ -142,7 +223,9 @@ fun FocusScreen(vm:AppViewModel){
             if(vm.usageRows.isEmpty())Text("No Usage Access data yet. Grant access, then refresh.")
             vm.usageRows.take(15).forEach{Text(it.appName+" — "+it.minutes+" min",Modifier.padding(vertical=2.dp))}
         }
-        SectionCard("Recreation rule"){Text("Movies, games and casual rest are allowed when deliberately planned. Aimless scrolling is different: it consumes attention and should be treated as an accountability signal.")}
+        SectionCard("Recreation rule"){
+            Text("Movies, games and casual rest are allowed when deliberately planned. Aimless scrolling is different: it consumes attention and should be treated as an accountability signal.")
+        }
     }
 }
 
@@ -153,39 +236,125 @@ fun FinanceScreen(vm:AppViewModel){
     var amount by remember{mutableStateOf("")}
     var description by remember{mutableStateOf("")}
     var planned by remember{mutableStateOf(true)}
+    var accountId by remember{mutableStateOf(vm.state.finance.accounts.firstOrNull()?.id?:"")}
     var budgetName by remember{mutableStateOf("")}
     var budgetAmount by remember{mutableStateOf("")}
     var goalName by remember{mutableStateOf("")}
     var goalTarget by remember{mutableStateOf("")}
     var goalDate by remember{mutableStateOf("")}
     var goalFreq by remember{mutableStateOf("Weekly")}
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)){
-        SectionCard("Balances"){
-            vm.state.finance.accounts.forEach{a->OutlinedTextField(a.balance.toString(),{v->vm.updateAccount(a.id,v.toDoubleOrNull()?:0.0)},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text(a.name)},singleLine=true)}
-            Text("Total: "+ugx(vm.accountTotal()))
-            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Button(onClick={vm.addBalanceCheck("Morning","")}){Text("Morning check")};OutlinedButton(onClick={vm.addBalanceCheck("Evening","")}){Text("Evening check")}}
-        }
-        SectionCard("Transaction"){
-            Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){FilterChip(txType=="Expense",{txType="Expense"},label={Text("Expense")});FilterChip(txType=="Income",{txType="Income"},label={Text("Income")})}
-            OutlinedTextField(amount,{amount=it},Modifier.fillMaxWidth(),label={Text("Amount UGX")},singleLine=true)
-            OutlinedTextField(category,{category=it},Modifier.fillMaxWidth(),label={Text("Category")},singleLine=true)
-            OutlinedTextField(description,{description=it},Modifier.fillMaxWidth(),label={Text("Description")},singleLine=true)
-            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Checkbox(planned,{planned=it});Text("Planned")}
-            Button(onClick={vm.addTransaction(txType,category,amount.toDoubleOrNull()?:0.0,description,planned);amount="";description=""}){Text("Save transaction")}
-        }
-        SectionCard("Monthly budget"){
-            OutlinedTextField(budgetName,{budgetName=it},Modifier.fillMaxWidth(),label={Text("Category")},singleLine=true)
-            OutlinedTextField(budgetAmount,{budgetAmount=it},Modifier.fillMaxWidth(),label={Text("Limit UGX")},singleLine=true)
-            Button(onClick={vm.setBudget(budgetName,budgetAmount.toDoubleOrNull()?:0.0)}){Text("Save budget")}
-            vm.state.finance.budgets.filter{it.monthlyLimit>0}.forEach{Text(it.name+": "+ugx(vm.spentThisMonth(it.name))+" / "+ugx(it.monthlyLimit))}
-        }
-        SectionCard("Savings project"){
-            OutlinedTextField(goalName,{goalName=it},Modifier.fillMaxWidth(),label={Text("Goal name")},singleLine=true)
-            OutlinedTextField(goalTarget,{goalTarget=it},Modifier.fillMaxWidth(),label={Text("Target UGX")},singleLine=true)
-            OutlinedTextField(goalDate,{goalDate=it},Modifier.fillMaxWidth(),label={Text("Target date YYYY-MM-DD")},singleLine=true)
-            Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("Daily","Weekly","Monthly").forEach{FilterChip(goalFreq==it,{goalFreq=it},label={Text(it)})}}
-            Button(onClick={vm.addSavingGoal(goalName,goalTarget.toDoubleOrNull()?:0.0,0.0,goalDate,goalFreq,"");goalName="";goalTarget="";goalDate=""}){Text("Create savings goal")}
-            vm.state.finance.savingGoals.forEach{g->Text(g.title+" — "+ugx(g.currentAmount)+" / "+ugx(g.targetAmount));vm.savingDiagnostic(g)?.let{Text(it)}}
+    var message by remember{mutableStateOf("")}
+    val scope=rememberCoroutineScope()
+    val snackbar=remember{SnackbarHostState()}
+    fun notify(text:String){
+        message=text
+        scope.launch{snackbar.showSnackbar(text)}
+    }
+
+    Scaffold(snackbarHost={SnackbarHost(snackbar)}){pad->
+        Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)){
+            SectionCard("Money at a glance"){
+                Text("Total balance",style=MaterialTheme.typography.labelLarge)
+                Text(ugx(vm.accountTotal()),style=MaterialTheme.typography.headlineSmall)
+                Text("This month • income "+ugx(vm.monthIncome())+" • expenses "+ugx(vm.monthExpenses()))
+                Text("Today • income "+ugx(vm.todayIncome())+" • expenses "+ugx(vm.todayExpenses()))
+            }
+
+            SectionCard("Accounts"){
+                vm.state.finance.accounts.forEach{a->
+                    OutlinedTextField(
+                        a.balance.toString(),
+                        {v->vm.updateAccount(a.id,v.toDoubleOrNull()?:a.balance)},
+                        Modifier.fillMaxWidth().padding(vertical=2.dp),
+                        label={Text(a.name)},singleLine=true
+                    )
+                }
+                Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                    Button(onClick={vm.addBalanceCheck("Morning","");notify("Morning balance check recorded.")}){Text("Morning check")}
+                    OutlinedButton(onClick={vm.addBalanceCheck("Evening","");notify("Evening balance check recorded.")}){Text("Evening check")}
+                }
+            }
+
+            SectionCard("Record a transaction"){
+                Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
+                    FilterChip(txType=="Expense",{txType="Expense"},label={Text("Expense")})
+                    FilterChip(txType=="Income",{txType="Income"},label={Text("Income")})
+                }
+                OutlinedTextField(amount,{amount=it},Modifier.fillMaxWidth(),label={Text("Amount UGX")},singleLine=true)
+                OutlinedTextField(category,{category=it},Modifier.fillMaxWidth(),label={Text("Category")},singleLine=true)
+                OutlinedTextField(description,{description=it},Modifier.fillMaxWidth(),label={Text("Description / merchant")},singleLine=true)
+                Text("Account charged / credited",Modifier.padding(top=6.dp))
+                Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
+                    vm.state.finance.accounts.forEach{a->
+                        FilterChip(accountId==a.id,{accountId=a.id},label={Text(a.name)})
+                    }
+                }
+                Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                    Checkbox(planned,{planned=it})
+                    Text("Planned")
+                }
+                Button(onClick={
+                    val parsed=amount.toDoubleOrNull()?:0.0
+                    if(parsed>0){
+                        vm.addTransaction(txType,category,parsed,description,planned,accountId)
+                        notify("Saved "+txType.lowercase()+" of "+ugx(parsed)+" to "+category+". Account balance updated.")
+                        amount="";description=""
+                    }else notify("Enter an amount greater than zero.")
+                }){Text("Save transaction")}
+                if(message.isNotBlank())Text(message,style=MaterialTheme.typography.bodySmall)
+            }
+
+            SectionCard("Recent transactions"){
+                val txs=vm.recentTransactions()
+                if(txs.isEmpty())Text("No transactions yet. Saved entries will appear here immediately.")
+                txs.forEach{t->
+                    val account=vm.state.finance.accounts.firstOrNull{it.id==t.accountId}?.name ?: "Account"
+                    Text(
+                        (if(t.type=="Expense")"− " else "+ ")+ugx(t.amount)+" • "+t.category,
+                        style=MaterialTheme.typography.bodyLarge
+                    )
+                    Text(t.date+" "+t.time.take(5)+" • "+account+" • "+if(t.planned)"planned" else "unplanned")
+                    if(t.description.isNotBlank())Text(t.description)
+                    HorizontalDivider(Modifier.padding(vertical=6.dp))
+                }
+            }
+
+            SectionCard("Monthly budgets"){
+                OutlinedTextField(budgetName,{budgetName=it},Modifier.fillMaxWidth(),label={Text("Category")},singleLine=true)
+                OutlinedTextField(budgetAmount,{budgetAmount=it},Modifier.fillMaxWidth(),label={Text("Limit UGX")},singleLine=true)
+                Button(onClick={
+                    vm.setBudget(budgetName,budgetAmount.toDoubleOrNull()?:0.0)
+                    notify("Budget saved.")
+                }){Text("Save budget")}
+                vm.state.finance.budgets.filter{it.monthlyLimit>0}.forEach{b->
+                    val spent=vm.spentThisMonth(b.name)
+                    val progress=(spent/b.monthlyLimit).coerceIn(0.0,1.0).toFloat()
+                    Text(b.name+"  •  "+ugx(spent)+" / "+ugx(b.monthlyLimit))
+                    LinearProgressIndicator(progress={progress},Modifier.fillMaxWidth().padding(bottom=6.dp))
+                }
+            }
+
+            SectionCard("Savings projects"){
+                OutlinedTextField(goalName,{goalName=it},Modifier.fillMaxWidth(),label={Text("Goal name")},singleLine=true)
+                OutlinedTextField(goalTarget,{goalTarget=it},Modifier.fillMaxWidth(),label={Text("Target UGX")},singleLine=true)
+                OutlinedTextField(goalDate,{goalDate=it},Modifier.fillMaxWidth(),label={Text("Target date YYYY-MM-DD")},singleLine=true)
+                Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
+                    listOf("Daily","Weekly","Monthly").forEach{
+                        FilterChip(goalFreq==it,{goalFreq=it},label={Text(it)})
+                    }
+                }
+                Button(onClick={
+                    vm.addSavingGoal(goalName,goalTarget.toDoubleOrNull()?:0.0,0.0,goalDate,goalFreq,"")
+                    notify("Savings project created.")
+                    goalName="";goalTarget="";goalDate=""
+                }){Text("Create savings goal")}
+                vm.state.finance.savingGoals.forEach{g->
+                    val p=(g.currentAmount/g.targetAmount).coerceIn(0.0,1.0).toFloat()
+                    Text(g.title+" — "+ugx(g.currentAmount)+" / "+ugx(g.targetAmount))
+                    LinearProgressIndicator(progress={p},Modifier.fillMaxWidth().padding(bottom=4.dp))
+                    vm.savingDiagnostic(g)?.let{Text(it)}
+                }
+            }
         }
     }
 }
@@ -194,54 +363,140 @@ fun FinanceScreen(vm:AppViewModel){
 fun GrowthScreen(vm:AppViewModel){
     val drum=vm.state.growth.drumming
     val coffee=vm.state.growth.coffee
+    val exercise=vm.state.growth.exercise
     var technique by remember(drum.weekKey){mutableStateOf(drum.techniqueNote)}
     var groove by remember(drum.weekKey){mutableStateOf(drum.grooveApplication)}
     var fill by remember(drum.weekKey){mutableStateOf(drum.fillApplication)}
     var learn by remember{mutableStateOf(coffee.learnNotes)}
     var practice by remember{mutableStateOf(coffee.practiceResult)}
     var application by remember{mutableStateOf(coffee.applicationResult)}
+    var exerciseFeedback by remember{mutableStateOf(exercise.feedback)}
+    var skillName by remember{mutableStateOf("")}
+    var skillDomain by remember{mutableStateOf("")}
+    var skillGoal by remember{mutableStateOf("")}
+    var nextSkill by remember{mutableStateOf("")}
+    var recommendation by remember{mutableStateOf(vm.state.growth.chatgptGrowthRecommendation)}
+    val context=LocalContext.current
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)){
-        SectionCard("This week's drumming"){
-            Text("Skill / rudiment: "+drum.skill,style=MaterialTheme.typography.titleMedium)
-            Text("Weekly method: learn how it is played → groove use → fills → song application.")
-            Spacer(Modifier.height(8.dp))
+        SectionCard("Morning exercise — beginner progression"){
+            Text("Week "+exercise.weekNumber+" • "+exercise.phase,style=MaterialTheme.typography.titleMedium)
+            Text("Today's session:")
+            Text(vm.exerciseToday())
+            Text("Sessions logged this week: "+exercise.completedSessions)
+            OutlinedTextField(
+                exerciseFeedback,{exerciseFeedback=it},
+                Modifier.fillMaxWidth(),
+                label={Text("How did today's session feel?")}
+            )
+            Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
+                Button(onClick={
+                    vm.completeExerciseSession(exerciseFeedback)
+                }){Text("Complete session")}
+                OutlinedButton(onClick={
+                    vm.saveExerciseFeedback(exerciseFeedback)
+                }){Text("Save feedback")}
+            }
+            Text("Next adjustment: "+exercise.nextAdjustment.ifBlank{"No adjustment yet."})
+            Text("Recommendation: build gradually. The goal is consistency, stamina and whole-body strength; stomach size changes through overall body-composition changes, not spot reduction alone.")
+        }
+
+        SectionCard("Drumming — weekly skill mastery"){
+            Text("Current skill: "+drum.skill,style=MaterialTheme.typography.titleMedium)
+            Text("Method: learn how it is played → usable groove → fills → song application → review.")
             Text("Current stage: "+vm.drummingProgressLabel())
-            Row(horizontalArrangement=Arrangement.spacedBy(6.dp),modifier=Modifier.padding(vertical=6.dp)){
-                listOf("Technique","Secure","Groove","Fills","Song").forEachIndexed{i,label->
-                    FilterChip(selected=drum.skillProgress==i,onClick={vm.setDrummingProgress(i)},label={Text(label)})
+            Row(horizontalArrangement=Arrangement.spacedBy(5.dp),modifier=Modifier.padding(vertical=6.dp)){
+                listOf("Learn","Secure","Groove","Fills","Song").forEachIndexed{i,label->
+                    FilterChip(drum.skillProgress==i,{vm.setDrummingProgress(i)},label={Text(label)})
                 }
             }
+            Text("Confidence: "+drum.confidence+"/5")
+            Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){
+                (1..5).forEach{i->FilterChip(drum.confidence==i,{vm.setDrummingConfidence(i)},label={Text(i.toString())})}
+            }
             OutlinedTextField(technique,{technique=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("How it is played / technique notes")})
-            OutlinedTextField(groove,{groove=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Groove application / useful grooves")})
+            OutlinedTextField(groove,{groove=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Groove application")})
             OutlinedTextField(fill,{fill=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Fill application")})
-            Button(onClick={vm.setDrummingNotes(technique,groove,fill)}){Text("Save drumming notes")}
+            Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
+                Button(onClick={vm.setDrummingNotes(technique,groove,fill)}){Text("Save notes")}
+                OutlinedButton(onClick={vm.completeDrummingSkill}){Text("Skill mastered")}
+            }
+            Text(if(drum.skillCompleted)"✓ Skill marked mastered. Next skill should be selected during the next growth review."
+                else "Do not mark mastered just because the exercise was attempted. Mark it when you can play it cleanly and apply it.")
         }
+
         SectionCard("This week's worship song"){
-            OutlinedTextField(drum.worshipSong,{vm::setWorshipSong},Modifier.fillMaxWidth(),label={Text("Song title")},singleLine=true)
-            Text("Goal: learn section by section and be able to play through by Sunday.",Modifier.padding(vertical=6.dp))
+            OutlinedTextField(drum.worshipSong,{vm.setWorshipSong(it)},Modifier.fillMaxWidth(),label={Text("Song title")},singleLine=true)
+            Text("Goal: learn section by section and be able to play through by Sunday.")
             drum.worshipSections.forEach{section->
-                Row(Modifier.fillMaxWidth().padding(vertical=2.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
-                    FilterChip(selected=drum.completedSections.contains(section),onClick={vm.toggleWorshipSection(section)},label={Text(section)})
-                }
+                FilterChip(
+                    selected=drum.completedSections.contains(section),
+                    onClick={vm.toggleWorshipSection(section)},
+                    label={Text(section)}
+                )
             }
             Text("Sections complete: "+drum.completedSections.size+"/"+drum.worshipSections.size)
         }
-        SectionCard("Coffee Quality course — assistant-led"){
-            Text("Current stage: "+coffee.currentStage)
-            Text("Current lesson: "+coffee.currentLesson,style=MaterialTheme.typography.titleMedium)
-            Text("Study method: "+vm.coffeeStudyMethod())
+
+        SectionCard("Coffee Quality — assistant-led"){
+            Text("Stage: "+coffee.currentStage)
+            Text("Lesson "+coffee.lessonNumber+": "+coffee.currentLesson,style=MaterialTheme.typography.titleMedium)
+            Text("Method: Learn → Practice → Apply → Review")
             Text("Status: "+coffee.lessonStatus)
-            Row(horizontalArrangement=Arrangement.spacedBy(6.dp),modifier=Modifier.padding(vertical=6.dp)){
-                listOf("Planned","Learning","Practicing","Applied","Reviewed").forEach{status->
-                    FilterChip(selected=coffee.lessonStatus==status,onClick={vm.setCoffeeStatus(status)},label={Text(status)})
+            Row(horizontalArrangement=Arrangement.spacedBy(5.dp),modifier=Modifier.padding(vertical=5.dp)){
+                listOf("Planned","Learning","Practicing","Applied","Reviewed").forEach{
+                    FilterChip(coffee.lessonStatus==it,{vm.setCoffeeStatus(it)},label={Text(it)})
                 }
             }
             OutlinedTextField(learn,{learn=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("What I learned")})
             OutlinedTextField(practice,{practice=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Practice result")})
             OutlinedTextField(application,{application=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Coffee-station application")})
             Button(onClick={vm.setCoffeeNotes(learn,practice,application)}){Text("Save coffee lesson")}
-            Text("Course roadmap",style=MaterialTheme.typography.titleMedium,modifier=Modifier.padding(top=10.dp))
-            coffee.roadmap.forEachIndexed{i,item->Text(item,Modifier.padding(vertical=2.dp))}
+            Text("Course roadmap",style=MaterialTheme.typography.titleMedium,modifier=Modifier.padding(top=8.dp))
+            coffee.roadmap.forEach{Text(it,Modifier.padding(vertical=2.dp))}
+        }
+
+        SectionCard("Personal skill roadmap"){
+            Text("This is where a skill moves from interest → active practice → mastery → next skill.")
+            vm.state.growth.otherSkills.forEach{skill->
+                Text(skill.name+" • "+skill.domain+" • "+skill.progress+"% • "+skill.stage,style=MaterialTheme.typography.titleSmall)
+                if(skill.goal.isNotBlank())Text("Goal: "+skill.goal)
+                if(skill.nextSkill.isNotBlank())Text("Next: "+skill.nextSkill)
+                if(skill.notes.isNotBlank())Text("Notes: "+skill.notes)
+                Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){
+                    Button(onClick={vm.updateSkillProgress(skill.id,(skill.progress+25).coerceAtMost(100),if(skill.progress+25>=100)"Ready for review" else "Learning",skill.notes)}){Text("+25%")}
+                    OutlinedButton(onClick={vm.completeSkill(skill.id)}){Text("Complete")}
+                }
+                HorizontalDivider(Modifier.padding(vertical=6.dp))
+            }
+            OutlinedTextField(skillName,{skillName=it},Modifier.fillMaxWidth(),label={Text("New skill")},singleLine=true)
+            OutlinedTextField(skillDomain,{skillDomain=it},Modifier.fillMaxWidth(),label={Text("Domain / career area")},singleLine=true)
+            OutlinedTextField(skillGoal,{skillGoal=it},Modifier.fillMaxWidth(),label={Text("Why this skill matters")})
+            OutlinedTextField(nextSkill,{nextSkill=it},Modifier.fillMaxWidth(),label={Text("Possible next skill")})
+            Button(onClick={
+                vm.addSkill(skillName,skillDomain,skillGoal,nextSkill)
+                skillName="";skillDomain="";skillGoal="";nextSkill=""
+            }){Text("Add skill")}
+        }
+
+        SectionCard("ChatGPT growth coach"){
+            Text("The app records your progress. ChatGPT can use this brief to recommend what you should learn next based on your personal and career goals.")
+            OutlinedTextField(
+                recommendation,{recommendation=it},
+                Modifier.fillMaxWidth(),
+                label={Text("Latest ChatGPT recommendation")}
+            )
+            Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
+                Button(onClick={vm.setChatgptGrowthRecommendation(recommendation)}){Text("Save recommendation")}
+                OutlinedButton(onClick={
+                    context.startActivity(Intent.createChooser(
+                        Intent(Intent.ACTION_SEND).apply{
+                            type="text/plain"
+                            putExtra(Intent.EXTRA_TEXT,vm.growthBrief())
+                        },"Send growth brief"
+                    ))
+                }){Text("Send brief to ChatGPT")}
+            }
         }
     }
 }
@@ -252,13 +507,38 @@ fun ReviewScreen(vm:AppViewModel){
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)){
         SectionCard("Personal diagnostics"){vm.personalDiagnostics().forEach{Text("• "+it,Modifier.padding(vertical=3.dp))}}
         SectionCard("Finance diagnostics"){vm.financeDiagnostics().forEach{Text("• "+it,Modifier.padding(vertical=3.dp))}}
+        SectionCard("Growth diagnostics"){
+            Text("Exercise: "+vm.state.growth.exercise.completedSessions+" session(s) logged this week.")
+            Text("Drumming: "+vm.drummingProgressLabel()+" • confidence "+vm.state.growth.drumming.confidence+"/5")
+            Text("Coffee: "+vm.state.growth.coffee.lessonStatus)
+            vm.state.growth.otherSkills.forEach{Text("• "+it.name+": "+it.progress+"%")}
+        }
         SectionCard("Daily report"){
             Text(vm.dailyReport())
             Spacer(Modifier.height(8.dp))
             Button(onClick={
-                context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply{type="text/plain";putExtra(Intent.EXTRA_TEXT,vm.dailyReport())},"Share daily report"))
-            }){Text("Share to ChatGPT / another app")}
+                context.startActivity(Intent.createChooser(
+                    Intent(Intent.ACTION_SEND).apply{
+                        type="text/plain"
+                        putExtra(Intent.EXTRA_TEXT,vm.dailyReport())
+                    },"Share daily report"
+                ))
+            }){Text("Share daily report")}
         }
-        SectionCard("Core rule"){Text("When the schedule becomes difficult, reduce the routine rather than cancel it. Never miss twice deliberately.") }
+        SectionCard("Growth brief"){
+            Text(vm.growthBrief())
+            Spacer(Modifier.height(8.dp))
+            Button(onClick={
+                context.startActivity(Intent.createChooser(
+                    Intent(Intent.ACTION_SEND).apply{
+                        type="text/plain"
+                        putExtra(Intent.EXTRA_TEXT,vm.growthBrief())
+                    },"Share growth brief"
+                ))
+            }){Text("Send growth brief to ChatGPT")}
+        }
+        SectionCard("Core rule"){
+            Text("When the schedule becomes difficult, reduce the routine rather than cancel it. Never miss twice deliberately.")
+        }
     }
 }
