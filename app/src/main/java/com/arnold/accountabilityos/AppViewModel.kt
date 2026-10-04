@@ -47,10 +47,18 @@ class AppViewModel(app: Application):AndroidViewModel(app){
             save(state.copy(growth=state.growth.copy(
                 drumming=state.growth.drumming.copy(
                     weekKey=key,
+                    skill=state.growth.nextDrummingSkill,
                     skillProgress=0,
                     completedSections=emptyList(),
                     skillCompleted=false,
                     confidence=0
+                ),
+                exercise=state.growth.exercise.copy(
+                    weekKey=key,
+                    completedSessions=0,
+                    currentDay="",
+                    feedback="",
+                    nextAdjustment=""
                 )
             )))
         }
@@ -78,7 +86,19 @@ class AppViewModel(app: Application):AndroidViewModel(app){
     }
 
     fun completeDrummingSkill()=updateGrowth{
-        it.copy(drumming=it.drumming.copy(skillCompleted=true,skillProgress=4))
+        val current=it.drumming.skill
+        val next=when(current){
+            "5-stroke roll"->"Single paradiddle"
+            "Single paradiddle"->"6-stroke roll"
+            "6-stroke roll"->"Double paradiddle"
+            "Double paradiddle"->"Flam taps"
+            else->"Next skill — review with ChatGPT"
+        }
+        it.copy(
+            drumming=it.drumming.copy(skillCompleted=true,skillProgress=4),
+            drummingHistory=(it.drummingHistory+current).distinct(),
+            nextDrummingSkill=next
+        )
     }
 
     fun setWorshipSong(v:String)=updateGrowth{it.copy(drumming=it.drumming.copy(worshipSong=v))}
