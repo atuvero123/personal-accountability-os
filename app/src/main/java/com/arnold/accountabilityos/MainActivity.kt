@@ -262,12 +262,16 @@ fun FinanceScreen(vm:AppViewModel){
 
             SectionCard("Accounts"){
                 vm.state.finance.accounts.forEach{a->
+                    var balanceText by remember(a.id,a.balance){mutableStateOf(a.balance.toString())}
                     OutlinedTextField(
-                        a.balance.toString(),
-                        {v->vm.updateAccount(a.id,v.toDoubleOrNull()?:a.balance)},
+                        balanceText,{balanceText=it},
                         Modifier.fillMaxWidth().padding(vertical=2.dp),
                         label={Text(a.name)},singleLine=true
                     )
+                    OutlinedButton(onClick={
+                        vm.updateAccount(a.id,balanceText.toDoubleOrNull()?:a.balance)
+                        notify(a.name+" balance saved.")
+                    }){Text("Save "+a.name)}
                 }
                 Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
                     Button(onClick={vm.addBalanceCheck("Morning","");notify("Morning balance check recorded.")}){Text("Morning check")}
@@ -421,8 +425,14 @@ fun GrowthScreen(vm:AppViewModel){
                 Button(onClick={vm.setDrummingNotes(technique,groove,fill)}){Text("Save notes")}
                 OutlinedButton(onClick={vm.completeDrummingSkill}){Text("Skill mastered")}
             }
-            Text(if(drum.skillCompleted)"✓ Skill marked mastered. Next skill should be selected during the next growth review."
-                else "Do not mark mastered just because the exercise was attempted. Mark it when you can play it cleanly and apply it.")
+            Text(if(drum.skillCompleted)
+                "✓ Skill mastered. Next planned skill: "+vm.state.growth.nextDrummingSkill
+                else
+                "Do not mark mastered just because the exercise was attempted. Mark it when you can play it cleanly and apply it.")
+            if(vm.state.growth.drummingHistory.isNotEmpty()){
+                Text("Mastered skills: "+vm.state.growth.drummingHistory.joinToString(" → "))
+            }
+            Text("Next skill candidate: "+vm.state.growth.nextDrummingSkill)
         }
 
         SectionCard("This week's worship song"){
