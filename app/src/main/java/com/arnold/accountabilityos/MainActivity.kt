@@ -122,7 +122,7 @@ fun TodayScreen(vm:AppViewModel){
                             enabled=task.status!="done"
                         ){Text("Done")}
                         OutlinedButton(
-                            onClick={vm.postponeTask(task.id,plus30(task.start)),
+                            onClick={vm.postponeTask(task.id,plus30(task.start))},
                             enabled=task.status!="done"&&task.status!="missed"
                         ){Text("Move +30m")}
                         OutlinedButton(
