@@ -101,6 +101,7 @@ data class CoffeeCourseState(
 
 @Serializable
 data class ExercisePlanState(
+    val weekKey:String="",
     val weekNumber:Int=1,
     val phase:String="Beginner foundation",
     val currentDay:String="",
@@ -135,6 +136,8 @@ data class SkillTrack(
 @Serializable
 data class GrowthState(
     val drumming:DrummingWeek=DrummingWeek(),
+    val drummingHistory:List<String> = emptyList(),
+    val nextDrummingSkill:String="5-stroke roll",
     val coffee:CoffeeCourseState=CoffeeCourseState(),
     val exercise:ExercisePlanState=ExercisePlanState(),
     val otherSkills:List<SkillTrack> = emptyList(),
