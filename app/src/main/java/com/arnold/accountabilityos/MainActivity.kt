@@ -37,13 +37,13 @@ class MainActivity:ComponentActivity(){
 @Composable
 fun AccountabilityApp(vm:AppViewModel=viewModel()){
     var tab by remember{mutableIntStateOf(0)}
-    val titles=listOf("Today","Spiritual","Focus","Finance","Review")
+    val titles=listOf("Today","Spiritual","Focus","Finance","Growth","Review")
     Scaffold(
         topBar = { TopAppBar(title = { Text("Accountability OS • " + titles[tab]) }) },
         bottomBar = {
             NavigationBar {
                 titles.forEachIndexed { i, t ->
-                    NavigationBarItem(selected = tab == i, onClick = { tab = i }, icon = { Text(listOf("✓","✦","◉","₵","↻")[i]) }, label = { Text(t) })
+                    NavigationBarItem(selected = tab == i, onClick = { tab = i }, icon = { Text(listOf("✓","✦","◉","₵","♪","↻")[i]) }, label = { Text(t) })
                 }
             }
         }
@@ -54,7 +54,8 @@ fun AccountabilityApp(vm:AppViewModel=viewModel()){
                 1 -> SpiritualScreen(vm)
                 2 -> FocusScreen(vm)
                 3 -> FinanceScreen(vm)
-                4 -> ReviewScreen(vm)
+                4 -> GrowthScreen(vm)
+                5 -> ReviewScreen(vm)
             }
         }
     }
@@ -185,6 +186,62 @@ fun FinanceScreen(vm:AppViewModel){
             Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("Daily","Weekly","Monthly").forEach{FilterChip(goalFreq==it,{goalFreq=it},label={Text(it)})}}
             Button(onClick={vm.addSavingGoal(goalName,goalTarget.toDoubleOrNull()?:0.0,0.0,goalDate,goalFreq,"");goalName="";goalTarget="";goalDate=""}){Text("Create savings goal")}
             vm.state.finance.savingGoals.forEach{g->Text(g.title+" — "+ugx(g.currentAmount)+" / "+ugx(g.targetAmount));vm.savingDiagnostic(g)?.let{Text(it)}}
+        }
+    }
+}
+
+@Composable
+fun GrowthScreen(vm:AppViewModel){
+    val drum=vm.state.growth.drumming
+    val coffee=vm.state.growth.coffee
+    var technique by remember(drum.weekKey){mutableStateOf(drum.techniqueNote)}
+    var groove by remember(drum.weekKey){mutableStateOf(drum.grooveApplication)}
+    var fill by remember(drum.weekKey){mutableStateOf(drum.fillApplication)}
+    var learn by remember{mutableStateOf(coffee.learnNotes)}
+    var practice by remember{mutableStateOf(coffee.practiceResult)}
+    var application by remember{mutableStateOf(coffee.applicationResult)}
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)){
+        SectionCard("This week's drumming"){
+            Text("Skill / rudiment: "+drum.skill,style=MaterialTheme.typography.titleMedium)
+            Text("Weekly method: learn how it is played → groove use → fills → song application.")
+            Spacer(Modifier.height(8.dp))
+            Text("Current stage: "+vm.drummingProgressLabel())
+            Row(horizontalArrangement=Arrangement.spacedBy(6.dp),modifier=Modifier.padding(vertical=6.dp)){
+                listOf("Technique","Secure","Groove","Fills","Song").forEachIndexed{i,label->
+                    FilterChip(selected=drum.skillProgress==i,onClick={vm.setDrummingProgress(i)},label={Text(label)})
+                }
+            }
+            OutlinedTextField(technique,{technique=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("How it is played / technique notes")})
+            OutlinedTextField(groove,{groove=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Groove application / useful grooves")})
+            OutlinedTextField(fill,{fill=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Fill application")})
+            Button(onClick={vm.setDrummingNotes(technique,groove,fill)}){Text("Save drumming notes")}
+        }
+        SectionCard("This week's worship song"){
+            OutlinedTextField(drum.worshipSong,{vm::setWorshipSong},Modifier.fillMaxWidth(),label={Text("Song title")},singleLine=true)
+            Text("Goal: learn section by section and be able to play through by Sunday.",Modifier.padding(vertical=6.dp))
+            drum.worshipSections.forEach{section->
+                Row(Modifier.fillMaxWidth().padding(vertical=2.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){
+                    FilterChip(selected=drum.completedSections.contains(section),onClick={vm.toggleWorshipSection(section)},label={Text(section)})
+                }
+            }
+            Text("Sections complete: "+drum.completedSections.size+"/"+drum.worshipSections.size)
+        }
+        SectionCard("Coffee Quality course — assistant-led"){
+            Text("Current stage: "+coffee.currentStage)
+            Text("Current lesson: "+coffee.currentLesson,style=MaterialTheme.typography.titleMedium)
+            Text("Study method: "+vm.coffeeStudyMethod())
+            Text("Status: "+coffee.lessonStatus)
+            Row(horizontalArrangement=Arrangement.spacedBy(6.dp),modifier=Modifier.padding(vertical=6.dp)){
+                listOf("Planned","Learning","Practicing","Applied","Reviewed").forEach{status->
+                    FilterChip(selected=coffee.lessonStatus==status,onClick={vm.setCoffeeStatus(status)},label={Text(status)})
+                }
+            }
+            OutlinedTextField(learn,{learn=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("What I learned")})
+            OutlinedTextField(practice,{practice=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Practice result")})
+            OutlinedTextField(application,{application=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Coffee-station application")})
+            Button(onClick={vm.setCoffeeNotes(learn,practice,application)}){Text("Save coffee lesson")}
+            Text("Course roadmap",style=MaterialTheme.typography.titleMedium,modifier=Modifier.padding(top=10.dp))
+            coffee.roadmap.forEachIndexed{i,item->Text(item,Modifier.padding(vertical=2.dp))}
         }
     }
 }
