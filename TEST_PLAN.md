@@ -15,3 +15,10 @@
 13. Add a savings contribution and verify project and transaction history.
 14. Open Review and share the daily report.
 15. Reboot and verify reminders are restored.
+
+16. Open Growth and verify the weekly drumming skill defaults to the 5-stroke roll.
+17. Move drumming through Technique, Groove, Fills and Song stages and verify persistence.
+18. Enter a worship song and complete sections individually; verify progress persists.
+19. Verify a new week resets the drumming skill progression while retaining the course structure.
+20. Open Coffee Quality and verify the assistant-led Learn → Practice → Apply → Review method and roadmap.
+21. Change Coffee Quality lesson status and save learning/practice/application notes; verify persistence.
