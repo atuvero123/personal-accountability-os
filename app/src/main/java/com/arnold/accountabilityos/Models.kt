@@ -3,7 +3,12 @@ package com.arnold.accountabilityos
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class AppState(val days: Map<String, DayState> = emptyMap(), val finance: FinanceState = FinanceState(), val settings: SettingsState = SettingsState())
+data class AppState(
+    val days: Map<String, DayState> = emptyMap(),
+    val finance: FinanceState = FinanceState(),
+    val settings: SettingsState = SettingsState(),
+    val growth: GrowthState = GrowthState()
+)
 @Serializable
 data class SettingsState(val wakeTime:String="06:30", val sleepTime:String="23:00", val recreationalPhoneMinutes:Int=30)
 @Serializable
@@ -14,6 +19,48 @@ data class TaskItem(val id:String,val name:String,val start:String,val durationM
 data class ScriptureEntry(val id:String,val time:String,val source:String,val reference:String,val verseText:String,val lesson:String,val application:String)
 @Serializable data class MorningReview(val mustDo:String="",val risk:String="",val adjustment:String="")
 @Serializable data class EveningReview(val win:String="",val lostControl:String="",val postponed:String="",val tomorrowChange:String="")
+
+@Serializable
+data class DrummingWeek(
+    val weekKey:String="",
+    val skill:String="5-stroke roll",
+    val techniqueNote:String="Learn the sticking, rebound, accents and clean execution.",
+    val grooveApplication:String="Explore whether the rudiment can become a groove phrase; record useful groove ideas.",
+    val fillApplication:String="Build short fills using the rudiment, then connect them back into time.",
+    val skillProgress:Int=0,
+    val worshipSong:String="",
+    val worshipSections:List<String> = listOf("Intro","Verse","Chorus","Bridge / transition","Ending","Full play-through"),
+    val completedSections:List<String> = emptyList()
+)
+@Serializable
+data class CoffeeCourseState(
+    val currentStage:String="Foundations",
+    val currentLesson:String="Coffee quality foundations — from cherry to cup",
+    val lessonStatus:String="Planned",
+    val roadmap:List<String> = listOf(
+        "1. Foundations — what coffee quality means from cherry to cup",
+        "2. Varieties, origins and altitude",
+        "3. Cherry development, harvesting and selection",
+        "4. Processing — washed, natural and honey",
+        "5. Fermentation and drying",
+        "6. Storage, transport and green coffee",
+        "7. Green grading and physical defects",
+        "8. Cupping and sensory foundations",
+        "9. Roasting and roast development",
+        "10. Brewing and extraction",
+        "11. Quality control in coffee operations",
+        "12. Advanced sensory practice and Q Grader preparation"
+    ),
+    val learnNotes:String="",
+    val practiceResult:String="",
+    val applicationResult:String=""
+)
+@Serializable
+data class GrowthState(
+    val drumming:DrummingWeek=DrummingWeek(),
+    val coffee:CoffeeCourseState=CoffeeCourseState()
+)
+
 @Serializable
 data class FinanceState(
     val accounts:List<AccountBalance> = listOf(AccountBalance("cash","Cash",0.0),AccountBalance("mobile","Mobile Money",0.0),AccountBalance("bank","Bank / Other",0.0)),
