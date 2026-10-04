@@ -423,7 +423,7 @@ fun GrowthScreen(vm:AppViewModel){
             OutlinedTextField(fill,{fill=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Fill application")})
             Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
                 Button(onClick={vm.setDrummingNotes(technique,groove,fill)}){Text("Save notes")}
-                OutlinedButton(onClick={vm.completeDrummingSkill}){Text("Skill mastered")}
+                OutlinedButton(onClick={vm.completeDrummingSkill()}){Text("Skill mastered")}
             }
             Text(if(drum.skillCompleted)
                 "✓ Skill mastered. Next planned skill: "+vm.state.growth.nextDrummingSkill
