@@ -461,7 +461,7 @@ fun GrowthScreen(vm:AppViewModel){
             OutlinedTextField(learn,{learn=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("What I learned")})
             OutlinedTextField(practice,{practice=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Practice result")})
             OutlinedTextField(application,{application=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Coffee-station application")})
-            Button(onClick={vm.setCoffeeNotes(learn,practice,application)}){Text("Save coffee lesson")}
+            Button(onClick={vm.saveCoffeeLesson(learn,practice,application)}){Text("Save coffee lesson")}\n            Text("Saved lesson data: "+if(learn.isNotBlank()||practice.isNotBlank()||application.isNotBlank())"Yes — notes are stored locally." else "No notes saved yet.")
             Text("Course roadmap",style=MaterialTheme.typography.titleMedium,modifier=Modifier.padding(top=8.dp))
             coffee.roadmap.forEach{Text(it,Modifier.padding(vertical=2.dp))}
         }
