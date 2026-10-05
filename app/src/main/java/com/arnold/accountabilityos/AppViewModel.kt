@@ -119,7 +119,7 @@ class AppViewModel(app: Application):AndroidViewModel(app){
 
     fun setCoffeeStatus(status:String)=updateGrowth{g->g.copy(coffee=g.coffee.copy(lessonStatus=status))}
 
-    fun setCoffeeNotes(learn:String,practice:String,application:String)=updateGrowth{g->
+    fun saveCoffeeLesson(learn:String,practice:String,application:String)=updateGrowth{g->
         g.copy(coffee=g.coffee.copy(
             learnNotes=learn,
             practiceResult=practice,
@@ -127,7 +127,7 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         ))
     }
 
-    fun coffeeStudyMethod()="Learn → Practice → Apply → Review. The next lesson is set after review."
+    fun setCoffeeNotes(learn:String,practice:String,application:String)=saveCoffeeLesson(learn,practice,application)\n\n    fun coffeeStudyMethod()="Learn → Practice → Apply → Review. The next lesson is set after review."
 
     fun exerciseToday():String{
         val day=LocalDate.now().dayOfWeek
@@ -244,13 +244,13 @@ class AppViewModel(app: Application):AndroidViewModel(app){
     fun updateMorningReview(v:MorningReview)=updateDay{it.copy(morningReview=v)}
     fun updateEveningReview(v:EveningReview)=updateDay{it.copy(eveningReview=v)}
 
-    fun updateAccount(id:String,balance:Double){
+    fun saveAccountBalance(id:String,balance:Double){
         save(state.copy(finance=state.finance.copy(
             accounts=state.finance.accounts.map{if(it.id==id)it.copy(balance=balance)else it}
         )))
     }
 
-    fun accountTotal()=state.finance.accounts.sumOf{it.balance}
+    fun updateAccount(id:String,balance:Double)=saveAccountBalance(id,balance)\n\n    fun accountTotal()=state.finance.accounts.sumOf{it.balance}
 
     fun addBalanceCheck(period:String,note:String){
         val c=BalanceCheck(UUID.randomUUID().toString(),todayKey(),LocalTime.now().toString(),period,accountTotal(),note)
