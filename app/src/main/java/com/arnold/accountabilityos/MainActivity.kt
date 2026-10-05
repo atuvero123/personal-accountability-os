@@ -371,9 +371,9 @@ fun GrowthScreen(vm:AppViewModel){
     var technique by remember(drum.weekKey){mutableStateOf(drum.techniqueNote)}
     var groove by remember(drum.weekKey){mutableStateOf(drum.grooveApplication)}
     var fill by remember(drum.weekKey){mutableStateOf(drum.fillApplication)}
-    var learn by remember{mutableStateOf(coffee.learnNotes)}
-    var practice by remember{mutableStateOf(coffee.practiceResult)}
-    var application by remember{mutableStateOf(coffee.applicationResult)}
+    var learn by remember(coffee.learnNotes){mutableStateOf(coffee.learnNotes)}
+    var practice by remember(coffee.practiceResult){mutableStateOf(coffee.practiceResult)}
+    var application by remember(coffee.applicationResult){mutableStateOf(coffee.applicationResult)}
     var exerciseFeedback by remember{mutableStateOf(exercise.feedback)}
     var skillName by remember{mutableStateOf("")}
     var skillDomain by remember{mutableStateOf("")}
