@@ -395,6 +395,7 @@ fun GrowthScreen(vm:AppViewModel){
     var nextSkill by remember{mutableStateOf("")}
     var recommendation by remember{mutableStateOf(vm.state.growth.chatgptGrowthRecommendation)}
     var selectedCoffeeId by remember{mutableStateOf<String?>(null)}
+    var masteryMessage by remember(drum.weekKey,drum.skill){mutableStateOf("")}
     val context=LocalContext.current
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)){
@@ -422,12 +423,29 @@ fun GrowthScreen(vm:AppViewModel){
             Text("Stage: "+vm.drummingProgressLabel())
             Text("Evidence complete: "+vm.drummingCriteriaProgress()+"/5")
             if(drum.skillCompleted){
-                Text("✓ This skill already has a saved mastery record. Its history is retained.")
-                if(vm.state.growth.nextDrummingSkill!=drum.skill){
-                    OutlinedButton(onClick={vm.startNextDrummingSkill()}){
-                        Text("Start "+vm.state.growth.nextDrummingSkill)
+                Card(Modifier.fillMaxWidth().padding(vertical=6.dp)){
+                    Column(Modifier.padding(12.dp)){
+                        Text("✓ SKILL MASTERED",style=MaterialTheme.typography.titleMedium)
+                        Text(
+                            drum.skill+" has been recorded as mastered.",
+                            style=MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            "Your evidence is preserved in the growth record. You can now move on without losing what you achieved."
+                        )
+                        if(vm.state.growth.nextDrummingSkill!=drum.skill){
+                            Button(
+                                onClick={vm.startNextDrummingSkill()},
+                                modifier=Modifier.fillMaxWidth().padding(top=6.dp)
+                            ){
+                                Text("Start next skill: "+vm.state.growth.nextDrummingSkill)
+                            }
+                        }
                     }
                 }
+            }
+            if(masteryMessage.isNotBlank() && !drum.skillCompleted){
+                Text(masteryMessage)
             }
 
             Text("1. Learn — clean technique at target tempo",style=MaterialTheme.typography.titleSmall)
@@ -532,9 +550,14 @@ fun GrowthScreen(vm:AppViewModel){
                     vm.setDrummingNotes(technique,groove,fill)
                 }){Text("Save skill evidence")}
                 OutlinedButton(
-                    onClick={vm::completeDrummingSkill},
+                    onClick={
+                        vm.completeDrummingSkill()
+                        if(vm.state.growth.drumming.skillCompleted){
+                            masteryMessage="✓ Mastery recorded. "+vm.state.growth.drumming.skill+" is now complete."
+                        }
+                    },
                     enabled=vm.drummingCriteriaComplete() && !drum.skillCompleted
-                ){Text(if(drum.skillCompleted)"Mastered" else "Mark mastered")}
+                ){Text(if(drum.skillCompleted)"Mastered ✓" else "Mark mastered")}
             }
 
             if(!vm.drummingCriteriaComplete() && !drum.skillCompleted){
