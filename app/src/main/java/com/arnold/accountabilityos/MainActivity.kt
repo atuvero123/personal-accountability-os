@@ -590,6 +590,7 @@ fun GrowthScreen(vm:AppViewModel){
         }
 
         SectionCard("Drumming practice log"){
+            Text("Current skill: "+drum.skill,style=MaterialTheme.typography.titleSmall)
             Text("Record real practice sessions so progress is based on evidence, not memory.",style=MaterialTheme.typography.bodyLarge)
             Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){
                 OutlinedTextField(
@@ -701,8 +702,18 @@ fun GrowthScreen(vm:AppViewModel){
             Text("Method: Learn → Practice → Apply → Review")
             Text("Status: "+coffee.lessonStatus)
             Row(horizontalArrangement=Arrangement.spacedBy(5.dp),modifier=Modifier.padding(vertical=5.dp)){
-                listOf("Planned","Learning","Practicing","Applied","Reviewed").forEach{
-                    FilterChip(coffee.lessonStatus==it,{vm.setCoffeeStatus(it)},label={Text(it)})
+                listOf(
+                    "Planned" to "Plan",
+                    "Learning" to "Learn",
+                    "Practicing" to "Practice",
+                    "Applied" to "Apply",
+                    "Reviewed" to "Review"
+                ).forEach{(status,label)->
+                    FilterChip(
+                        selected=coffee.lessonStatus==status,
+                        onClick={vm.setCoffeeStatus(status)},
+                        label={Text(label,maxLines=1,softWrap=false)}
+                    )
                 }
             }
             OutlinedTextField(learn,{learn=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("What I learned")})
