@@ -127,7 +127,9 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         ))
     }
 
-    fun setCoffeeNotes(learn:String,practice:String,application:String)=saveCoffeeLesson(learn,practice,application)\n\n    fun coffeeStudyMethod()="Learn → Practice → Apply → Review. The next lesson is set after review."
+    fun setCoffeeNotes(learn:String,practice:String,application:String)=saveCoffeeLesson(learn,practice,application)
+
+    fun coffeeStudyMethod()="Learn → Practice → Apply → Review. The next lesson is set after review."
 
     fun exerciseToday():String{
         val day=LocalDate.now().dayOfWeek
@@ -250,7 +252,9 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         )))
     }
 
-    fun updateAccount(id:String,balance:Double)=saveAccountBalance(id,balance)\n\n    fun accountTotal()=state.finance.accounts.sumOf{it.balance}
+    fun updateAccount(id:String,balance:Double)=saveAccountBalance(id,balance)
+
+    fun accountTotal()=state.finance.accounts.sumOf{it.balance}
 
     fun addBalanceCheck(period:String,note:String){
         val c=BalanceCheck(UUID.randomUUID().toString(),todayKey(),LocalTime.now().toString(),period,accountTotal(),note)
@@ -424,7 +428,8 @@ class AppViewModel(app: Application):AndroidViewModel(app){
             }.sumOf{it.amount}),
             "Exercise: "+state.growth.exercise.completedSessions+" sessions logged this week.",
             "Drumming: "+state.growth.drumming.skill+" • "+drummingProgressLabel()+" • confidence "+state.growth.drumming.confidence+"/5"
-        ).joinToString("\n")
+        ).joinToString("
+")
     }
 
     fun growthBrief():String{
@@ -437,7 +442,8 @@ class AppViewModel(app: Application):AndroidViewModel(app){
             "Coffee: "+g.coffee.currentLesson+" • status "+g.coffee.lessonStatus,
             "Other skills: "+g.otherSkills.joinToString("; "){it.name+" ("+it.progress+"%, "+it.stage+")"}.ifBlank{"none"},
             "Previous ChatGPT growth recommendation: "+g.chatgptGrowthRecommendation.ifBlank{"none"}
-        ).joinToString("\n")
+        ).joinToString("
+")
     }
 
     private fun defaultTasks()=listOf(
