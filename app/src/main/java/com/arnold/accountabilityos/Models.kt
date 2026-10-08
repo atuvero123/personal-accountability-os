@@ -160,9 +160,46 @@ data class SkillTrack(
 )
 
 @Serializable
+data class DrummingMasteryRecord(
+    val id:String,
+    val skill:String,
+    val date:String,
+    val learningBpm:Int,
+    val secureBpm:Int,
+    val groovesCompleted:Int,
+    val fillsCompleted:Int,
+    val song:String,
+    val songResult:String,
+    val confidence:Int
+)
+
+@Serializable
+data class DrummingPracticeRecord(
+    val id:String,
+    val date:String,
+    val skill:String,
+    val bpm:Int,
+    val focus:String,
+    val result:String,
+    val nextAdjustment:String
+)
+
+@Serializable
+data class WorshipSongRecord(
+    val id:String,
+    val weekKey:String,
+    val song:String,
+    val completedSections:List<String>,
+    val date:String
+)
+
+@Serializable
 data class GrowthState(
     val drumming:DrummingWeek=DrummingWeek(),
     val drummingHistory:List<String> = emptyList(),
+    val drummingMasteryHistory:List<DrummingMasteryRecord> = emptyList(),
+    val drummingPracticeHistory:List<DrummingPracticeRecord> = emptyList(),
+    val worshipHistory:List<WorshipSongRecord> = emptyList(),
     val nextDrummingSkill:String="5-stroke roll",
     val coffee:CoffeeCourseState=CoffeeCourseState(),
     val exercise:ExercisePlanState=ExercisePlanState(),
