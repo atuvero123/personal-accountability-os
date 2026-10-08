@@ -19,7 +19,7 @@ class AppViewModel(app: Application):AndroidViewModel(app){
     var state by mutableStateOf(store.load()); private set
     var usageRows by mutableStateOf<List<UsageRow>>(emptyList()); private set
 
-    init{ensureToday();ensureGrowthWeek();refreshUsage()}
+    init{ensureToday();ensureGrowthWeek();ensureDrummingSkillLink();refreshUsage()}
 
     fun todayKey()=LocalDate.now().toString()
     fun today():DayState{ensureToday();return state.days[todayKey()]!!}
@@ -43,16 +43,8 @@ class AppViewModel(app: Application):AndroidViewModel(app){
 
     private fun ensureGrowthWeek(){
         val key=weekKey()
-        if(state.growth.drumming.weekKey!=key){
+        if(state.growth.exercise.weekKey!=key){
             save(state.copy(growth=state.growth.copy(
-                drumming=state.growth.drumming.copy(
-                    weekKey=key,
-                    skill=state.growth.nextDrummingSkill,
-                    skillProgress=0,
-                    completedSections=emptyList(),
-                    skillCompleted=false,
-                    confidence=0
-                ),
                 exercise=state.growth.exercise.copy(
                     weekKey=key,
                     completedSessions=0,
@@ -64,17 +56,106 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         }
     }
 
+    private fun ensureDrummingSkillLink(){
+        val d=state.growth.drumming
+        val expected=nextSkillAfter(d.skill)
+        if(state.growth.nextDrummingSkill!=expected && !d.skillCompleted){
+            save(state.copy(growth=state.growth.copy(nextDrummingSkill=expected)))
+        }
+    }
+
+    private fun nextSkillAfter(skill:String):String=when(skill){
+        "5-stroke roll"->"Single paradiddle"
+        "Single paradiddle"->"6-stroke roll"
+        "6-stroke roll"->"Double paradiddle"
+        "Double paradiddle"->"Flam taps"
+        "Flam taps"->"Groove integration — review with ChatGPT"
+        else->"Next skill — review with ChatGPT"
+    }
+
     private fun updateGrowth(f:(GrowthState)->GrowthState){
         ensureGrowthWeek()
         save(state.copy(growth=f(state.growth)))
     }
 
-    fun drummingProgressLabel()=when(state.growth.drumming.skillProgress){
-        0->"1 • Learn / technique"
-        1->"2 • Technique secure"
-        2->"3 • Groove application"
-        3->"4 • Fills"
-        else->"5 • Song application / ready"
+    fun drummingCriteriaComplete():Boolean{
+        val d=state.growth.drumming
+        return d.learningBpm>=d.learningTargetBpm &&
+            d.secureBpm>=d.secureTargetBpm &&
+            d.groovesCompleted>=d.grooveTarget &&
+            d.fillsCompleted>=d.fillTarget &&
+            d.skillSongApplied
+    }
+
+    fun drummingCriteriaProgress():Int{
+        val d=state.growth.drumming
+        var done=0
+        if(d.learningBpm>=d.learningTargetBpm)done++
+        if(d.secureBpm>=d.secureTargetBpm)done++
+        if(d.groovesCompleted>=d.grooveTarget)done++
+        if(d.fillsCompleted>=d.fillTarget)done++
+        if(d.skillSongApplied)done++
+        return done
+    }
+
+    fun drummingProgressLabel():String{
+        val d=state.growth.drumming
+        if(d.skillCompleted)return "6 • Mastered"
+        return when{
+            d.learningBpm<d.learningTargetBpm->"1 • Learn / technique"
+            d.secureBpm<d.secureTargetBpm->"2 • Secure / controlled range"
+            d.groovesCompleted<d.grooveTarget->"3 • Groove application"
+            d.fillsCompleted<d.fillTarget->"4 • Fills / variations"
+            !d.skillSongApplied->"5 • Song application"
+            else->"5 • Ready for mastery"
+        }
+    }
+
+    fun drummingMissingCriteria():List<String>{
+        val d=state.growth.drumming
+        val missing=mutableListOf<String>()
+        if(d.learningBpm<d.learningTargetBpm)missing.add("Learning: reach ${d.learningTargetBpm} BPM cleanly")
+        if(d.secureBpm<d.secureTargetBpm)missing.add("Secure: reach ${d.secureTargetBpm} BPM cleanly")
+        if(d.groovesCompleted<d.grooveTarget)missing.add("Groove: ${d.groovesCompleted}/${d.grooveTarget} applications")
+        if(d.fillsCompleted<d.fillTarget)missing.add("Fills: ${d.fillsCompleted}/${d.fillTarget} variations")
+        if(!d.skillSongApplied)missing.add("Song: apply the skill in a selected song")
+        return missing
+    }
+
+    fun setDrummingCriteria(
+        learningBpm:Int,
+        secureBpm:Int,
+        grooves:Int,
+        fills:Int,
+        song:String,
+        songApplied:Boolean,
+        songResult:String
+    )=updateGrowth{g->
+        g.copy(drumming=g.drumming.copy(
+            learningBpm=learningBpm.coerceAtLeast(0),
+            secureBpm=secureBpm.coerceAtLeast(0),
+            groovesCompleted=grooves.coerceAtLeast(0),
+            fillsCompleted=fills.coerceAtLeast(0),
+            skillSong=song,
+            skillSongApplied=songApplied,
+            skillSongResult=songResult
+        ))
+    }
+
+    fun setDrummingTargets(
+        learningTarget:Int,
+        secureMin:Int,
+        secureTarget:Int,
+        grooveTarget:Int,
+        fillTarget:Int
+    )=updateGrowth{g->
+        g.copy(drumming=g.drumming.copy(
+            learningTargetBpm=learningTarget.coerceAtLeast(1),
+            secureMinBpm=secureMin.coerceAtLeast(1),
+            secureTargetBpm=secureTarget.coerceAtLeast(1),
+            grooveTarget=grooveTarget.coerceAtLeast(1),
+            fillTarget=fillTarget.coerceAtLeast(1)
+        ))
     }
 
     fun setDrummingProgress(v:Int)=updateGrowth{
@@ -85,20 +166,59 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         it.copy(drumming=it.drumming.copy(confidence=v.coerceIn(0,5)))
     }
 
-    fun completeDrummingSkill()=updateGrowth{
-        val current=it.drumming.skill
-        val next=when(current){
-            "5-stroke roll"->"Single paradiddle"
-            "Single paradiddle"->"6-stroke roll"
-            "6-stroke roll"->"Double paradiddle"
-            "Double paradiddle"->"Flam taps"
-            else->"Next skill — review with ChatGPT"
+    fun logDrummingPractice(bpm:Int,focus:String,result:String,nextAdjustment:String){
+        updateGrowth{g->
+            val d=g.drumming
+            g.copy(
+                drummingPracticeHistory=g.drummingPracticeHistory+DrummingPracticeRecord(
+                    id=UUID.randomUUID().toString(),
+                    date=todayKey(),
+                    skill=d.skill,
+                    bpm=bpm.coerceAtLeast(0),
+                    focus=focus.trim(),
+                    result=result.trim(),
+                    nextAdjustment=nextAdjustment.trim()
+                )
+            )
         }
-        it.copy(
-            drumming=it.drumming.copy(skillCompleted=true,skillProgress=4),
-            drummingHistory=(it.drummingHistory+current).distinct(),
-            nextDrummingSkill=next
-        )
+    }
+
+    fun drummingPracticeHistory(): List<DrummingPracticeRecord> = state.growth.drummingPracticeHistory
+
+    fun startNextDrummingSkill(): Unit = updateGrowth { g ->
+        val next=g.nextDrummingSkill
+        g.copy(drumming=DrummingWeek(
+            weekKey=g.drumming.weekKey,
+            skill=next
+        ))
+    }
+
+    fun completeDrummingSkill(){
+        if(!drummingCriteriaComplete())return
+        updateGrowth{
+            val d=it.drumming
+            val current=d.skill
+            val next=nextSkillAfter(current)
+            val alreadyRecorded=it.drummingMasteryHistory.any{record->record.skill==current}
+            val masteryRecord=DrummingMasteryRecord(
+                id=UUID.randomUUID().toString(),
+                skill=current,
+                date=todayKey(),
+                learningBpm=d.learningBpm,
+                secureBpm=d.secureBpm,
+                groovesCompleted=d.groovesCompleted,
+                fillsCompleted=d.fillsCompleted,
+                song=d.skillSong,
+                songResult=d.skillSongResult,
+                confidence=d.confidence
+            )
+            it.copy(
+                drumming=d.copy(skillCompleted=true,skillProgress=4),
+                drummingHistory=(it.drummingHistory+current).distinct(),
+                drummingMasteryHistory=if(alreadyRecorded)it.drummingMasteryHistory else it.drummingMasteryHistory+masteryRecord,
+                nextDrummingSkill=next
+            )
+        }
     }
 
     fun setWorshipSong(v:String)=updateGrowth{it.copy(drumming=it.drumming.copy(worshipSong=v))}
@@ -107,6 +227,21 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         val done=g.drumming.completedSections.toMutableList()
         if(done.contains(section))done.remove(section)else done.add(section)
         g.copy(drumming=g.drumming.copy(completedSections=done))
+    }
+
+    fun saveWorshipWeek(){
+        val d=state.growth.drumming
+        if(d.worshipSong.isBlank())return
+        updateGrowth{g->
+            val record=WorshipSongRecord(
+                id=UUID.randomUUID().toString(),
+                weekKey=weekKey(),
+                song=d.worshipSong.trim(),
+                completedSections=d.completedSections,
+                date=todayKey()
+            )
+            g.copy(worshipHistory=g.worshipHistory+record)
+        }
     }
 
     fun setDrummingNotes(technique:String,groove:String,fill:String)=updateGrowth{g->
@@ -127,7 +262,54 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         ))
     }
 
-    fun coffeeStudyMethod()="Learn → Practice → Apply → Review. The next lesson is set after review."
+    fun saveCoffeeLesson(
+        learn:String,
+        practice:String,
+        application:String
+    ):Boolean{
+        if(learn.isBlank() && practice.isBlank() && application.isBlank())return false
+        val current=state.growth.coffee
+        val record=CoffeeLessonRecord(
+            id=UUID.randomUUID().toString(),
+            lessonNumber=current.lessonNumber,
+            topic=current.currentLesson,
+            stage=current.currentStage,
+            status=current.lessonStatus,
+            date=todayKey(),
+            learnNotes=learn.trim(),
+            practiceResult=practice.trim(),
+            applicationResult=application.trim()
+        )
+        updateGrowth{g->
+            val c=g.coffee
+            val nextIndex=c.lessonNumber
+            if(nextIndex<c.roadmap.size){
+                val nextTopic=c.roadmap[nextIndex].substringAfter(". ")
+                g.copy(coffee=c.copy(
+                    currentLesson=nextTopic,
+                    lessonNumber=c.lessonNumber+1,
+                    lessonStatus="Planned",
+                    learnNotes="",
+                    practiceResult="",
+                    applicationResult="",
+                    history=c.history+record
+                ))
+            }else{
+                g.copy(coffee=c.copy(
+                    lessonStatus="Reviewed",
+                    learnNotes="",
+                    practiceResult="",
+                    applicationResult="",
+                    history=c.history+record
+                ))
+            }
+        }
+        return true
+    }
+
+    fun coffeeHistory(): List<CoffeeLessonRecord> = state.growth.coffee.history
+
+    fun coffeeStudyMethod()="Learn → Practice → Apply → Review. Save each completed topic to its own lesson record; the form then resets for the next topic."
 
     fun exerciseToday():String{
         val day=LocalDate.now().dayOfWeek
@@ -429,12 +611,15 @@ class AppViewModel(app: Application):AndroidViewModel(app){
 
     fun growthBrief():String{
         val g=state.growth
+        val d=g.drumming
         return listOf(
             "Personal Growth Brief — "+todayKey(),
             "Life goals: spiritual maturity, physical fitness, drumming mastery, coffee quality, work/career growth and financial stability.",
             "Exercise: week "+g.exercise.weekNumber+" • "+g.exercise.completedSessions+" sessions completed. Feedback: "+g.exercise.feedback.ifBlank{"none"},
-            "Drumming: "+g.drumming.skill+" • "+drummingProgressLabel()+" • confidence "+g.drumming.confidence+"/5 • completed="+g.drumming.skillCompleted,
-            "Coffee: "+g.coffee.currentLesson+" • status "+g.coffee.lessonStatus,
+            "Drumming: "+d.skill+" • "+drummingProgressLabel()+" • evidence "+drummingCriteriaProgress()+"/5 • confidence "+d.confidence+"/5",
+            "Drumming evidence: Learn "+d.learningBpm+"/"+d.learningTargetBpm+" BPM; Secure "+d.secureBpm+"/"+d.secureTargetBpm+" BPM; Groove "+d.groovesCompleted+"/"+d.grooveTarget+"; Fills "+d.fillsCompleted+"/"+d.fillTarget+"; Song applied="+d.skillSongApplied,
+            "Mastered drumming history: "+g.drummingHistory.joinToString(" → ").ifBlank{"none"},
+            "Coffee: current lesson "+g.coffee.lessonNumber+" — "+g.coffee.currentLesson+" • status "+g.coffee.lessonStatus+" • saved lessons "+g.coffee.history.size,
             "Other skills: "+g.otherSkills.joinToString("; "){it.name+" ("+it.progress+"%, "+it.stage+")"}.ifBlank{"none"},
             "Previous ChatGPT growth recommendation: "+g.chatgptGrowthRecommendation.ifBlank{"none"}
         ).joinToString("\n")

@@ -23,15 +23,20 @@
 14. Open Growth and verify today's beginner exercise session is shown.
 15. Save exercise feedback and confirm it persists.
 16. Complete an exercise session and verify the weekly session count increases.
-17. Verify drumming starts with the 5-stroke roll and exposes Learn → Secure → Groove → Fills → Song.
-18. Set confidence, save notes and mark the skill mastered; verify persistence.
-19. Enter a worship song and complete sections individually; verify section progress persists.
-20. Verify a new week resets the drumming practice state while retaining the skill structure.
-21. Verify Coffee Quality supports Planned → Learning → Practicing → Applied → Reviewed and saves notes.
-22. Add a personal/career skill, update progress, complete it and verify persistence.
-23. Save a ChatGPT growth recommendation and use Send growth brief to verify the share sheet contains the current progress.
+17. Verify drumming exposes measurable Learn → Secure → Groove → Fills → Song criteria.
+18. Set learning/secure BPM targets and achieved BPM; verify the criteria progress updates correctly.
+19. Record groove applications and fill variations; verify the counts persist and the app identifies the remaining evidence.
+20. Record a song application and verify all five criteria can become complete before mastery.
+21. Verify an already-mastered skill remains in history and starting the next skill creates a fresh evidence record.
+22. Enter a worship song and complete sections individually; verify section progress persists.
+23. Verify a new week resets active drumming practice while retaining mastered history.
+24. Verify Coffee Quality supports Planned → Learning → Practicing → Applied → Reviewed.
+25. Save a real coffee lesson and verify it becomes a dated history record, the current form resets, and the next lesson is loaded.
+26. Reopen a saved coffee history item and verify all three note sections are intact.
+27. Add a personal/career skill, update progress, complete it and verify persistence.
+28. Save a ChatGPT growth recommendation and use Send growth brief to verify the share sheet contains the current progress.
 
 ## Review
-24. Verify Review shows personal, finance and growth diagnostics.
-25. Verify Daily report and Growth brief can be shared.
-26. Reboot and verify reminders still work.
+29. Verify Review shows personal, finance and growth diagnostics.
+30. Verify Daily report and Growth brief can be shared.
+31. Reboot and verify reminders still work.
