@@ -532,7 +532,7 @@ fun GrowthScreen(vm:AppViewModel){
                     vm.setDrummingNotes(technique,groove,fill)
                 }){Text("Save skill evidence")}
                 OutlinedButton(
-                    onClick={vm.completeDrummingSkill()},
+                    onClick={ { vm.completeDrummingSkill() } },
                     enabled={vm.drummingCriteriaComplete() || drum.skillCompleted}
                 ){Text("Mark mastered")}
             }
