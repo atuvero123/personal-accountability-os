@@ -368,18 +368,32 @@ fun GrowthScreen(vm:AppViewModel){
     val drum=vm.state.growth.drumming
     val coffee=vm.state.growth.coffee
     val exercise=vm.state.growth.exercise
-    var technique by remember(drum.weekKey){mutableStateOf(drum.techniqueNote)}
-    var groove by remember(drum.weekKey){mutableStateOf(drum.grooveApplication)}
-    var fill by remember(drum.weekKey){mutableStateOf(drum.fillApplication)}
-    var learn by remember{mutableStateOf(coffee.learnNotes)}
-    var practice by remember{mutableStateOf(coffee.practiceResult)}
-    var application by remember{mutableStateOf(coffee.applicationResult)}
-    var exerciseFeedback by remember{mutableStateOf(exercise.feedback)}
+    var technique by remember(drum.weekKey,drum.skill){mutableStateOf(drum.techniqueNote)}
+    var groove by remember(drum.weekKey,drum.skill){mutableStateOf(drum.grooveApplication)}
+    var fill by remember(drum.weekKey,drum.skill){mutableStateOf(drum.fillApplication)}
+    var learningBpm by remember(drum.weekKey,drum.skill){mutableStateOf(drum.learningBpm.toString())}
+    var secureBpm by remember(drum.weekKey,drum.skill){mutableStateOf(drum.secureBpm.toString())}
+    var grooves by remember(drum.weekKey,drum.skill){mutableStateOf(drum.groovesCompleted.toString())}
+    var fills by remember(drum.weekKey,drum.skill){mutableStateOf(drum.fillsCompleted.toString())}
+    var skillSong by remember(drum.weekKey,drum.skill){mutableStateOf(drum.skillSong)}
+    var songApplied by remember(drum.weekKey,drum.skill){mutableStateOf(drum.skillSongApplied)}
+    var songResult by remember(drum.weekKey,drum.skill){mutableStateOf(drum.skillSongResult)}
+    var learnTarget by remember(drum.weekKey,drum.skill){mutableStateOf(drum.learningTargetBpm.toString())}
+    var secureMin by remember(drum.weekKey,drum.skill){mutableStateOf(drum.secureMinBpm.toString())}
+    var secureTarget by remember(drum.weekKey,drum.skill){mutableStateOf(drum.secureTargetBpm.toString())}
+    var grooveTarget by remember(drum.weekKey,drum.skill){mutableStateOf(drum.grooveTarget.toString())}
+    var fillTarget by remember(drum.weekKey,drum.skill){mutableStateOf(drum.fillTarget.toString())}
+
+    var learn by remember(coffee.lessonNumber){mutableStateOf(coffee.learnNotes)}
+    var practice by remember(coffee.lessonNumber){mutableStateOf(coffee.practiceResult)}
+    var application by remember(coffee.lessonNumber){mutableStateOf(coffee.applicationResult)}
+    var exerciseFeedback by remember(exercise.weekKey){mutableStateOf(exercise.feedback)}
     var skillName by remember{mutableStateOf("")}
     var skillDomain by remember{mutableStateOf("")}
     var skillGoal by remember{mutableStateOf("")}
     var nextSkill by remember{mutableStateOf("")}
     var recommendation by remember{mutableStateOf(vm.state.growth.chatgptGrowthRecommendation)}
+    var selectedCoffeeId by remember{mutableStateOf<String?>(null)}
     val context=LocalContext.current
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)){
@@ -394,41 +408,145 @@ fun GrowthScreen(vm:AppViewModel){
                 label={Text("How did today's session feel?")}
             )
             Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
-                Button(onClick={
-                    vm.completeExerciseSession(exerciseFeedback)
-                }){Text("Complete session")}
-                OutlinedButton(onClick={
-                    vm.saveExerciseFeedback(exerciseFeedback)
-                }){Text("Save feedback")}
+                Button(onClick={vm.completeExerciseSession(exerciseFeedback)}){Text("Complete session")}
+                OutlinedButton(onClick={vm.saveExerciseFeedback(exerciseFeedback)}){Text("Save feedback")}
             }
             Text("Next adjustment: "+exercise.nextAdjustment.ifBlank{"No adjustment yet."})
             Text("Recommendation: build gradually. The goal is consistency, stamina and whole-body strength; stomach size changes through overall body-composition changes, not spot reduction alone.")
         }
 
-        SectionCard("Drumming — weekly skill mastery"){
+        SectionCard("Drumming — measurable skill mastery"){
             Text("Current skill: "+drum.skill,style=MaterialTheme.typography.titleMedium)
-            Text("Method: learn how it is played → usable groove → fills → song application → review.")
-            Text("Current stage: "+vm.drummingProgressLabel())
-            Row(horizontalArrangement=Arrangement.spacedBy(5.dp),modifier=Modifier.padding(vertical=6.dp)){
-                listOf("Learn","Secure","Groove","Fills","Song").forEachIndexed{i,label->
-                    FilterChip(drum.skillProgress==i,{vm.setDrummingProgress(i)},label={Text(label)})
+            Text("Mastery path: Learn → Secure → Groove → Fills → Song → Master")
+            Text("Stage: "+vm.drummingProgressLabel())
+            Text("Evidence complete: "+vm.drummingCriteriaProgress()+"/5")
+            if(drum.skillCompleted){
+                Text("✓ This skill already has a saved mastery record. Its history is retained.")
+                if(vm.state.growth.nextDrummingSkill!=drum.skill){
+                    OutlinedButton(onClick={vm.startNextDrummingSkill()}){
+                        Text("Start "+vm.state.growth.nextDrummingSkill)
+                    }
                 }
             }
+
+            Text("1. Learn — clean technique at target tempo",style=MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){
+                OutlinedTextField(
+                    learnTarget,{learnTarget=it},Modifier.weight(1f),
+                    label={Text("Target BPM")},singleLine=true
+                )
+                OutlinedTextField(
+                    learningBpm,{learningBpm=it},Modifier.weight(1f),
+                    label={Text("Achieved BPM")},singleLine=true
+                )
+            }
+
+            Text("2. Secure — clean performance across a controlled range",style=MaterialTheme.typography.titleSmall)
+            Text("Suggested secure range: "+drum.secureMinBpm+"–"+drum.secureTargetBpm+" BPM")
+            Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){
+                OutlinedTextField(
+                    secureMin,{secureMin=it},Modifier.weight(1f),
+                    label={Text("Range start")},singleLine=true
+                )
+                OutlinedTextField(
+                    secureTarget,{secureTarget=it},Modifier.weight(1f),
+                    label={Text("Target BPM")},singleLine=true
+                )
+                OutlinedTextField(
+                    secureBpm,{secureBpm=it},Modifier.weight(1f),
+                    label={Text("Achieved")},singleLine=true
+                )
+            }
+
+            Text("3. Groove — use the skill in multiple musical ideas",style=MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){
+                OutlinedTextField(
+                    grooveTarget,{grooveTarget=it},Modifier.weight(1f),
+                    label={Text("Target grooves")},singleLine=true
+                )
+                OutlinedTextField(
+                    grooves,{grooves=it},Modifier.weight(1f),
+                    label={Text("Completed")},singleLine=true
+                )
+            }
+            OutlinedTextField(
+                groove,{groove=it},Modifier.fillMaxWidth(),
+                label={Text("Groove ideas / what worked")}
+            )
+
+            Text("4. Fills — build different musical placements",style=MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){
+                OutlinedTextField(
+                    fillTarget,{fillTarget=it},Modifier.weight(1f),
+                    label={Text("Target fills")},singleLine=true
+                )
+                OutlinedTextField(
+                    fills,{fills=it},Modifier.weight(1f),
+                    label={Text("Completed")},singleLine=true
+                )
+            }
+            OutlinedTextField(
+                fill,{fill=it},Modifier.fillMaxWidth(),
+                label={Text("Fill evidence — end of bar, middle, one-beat, two-beat, etc.")}
+            )
+
+            Text("5. Song — apply the skill in real music",style=MaterialTheme.typography.titleSmall)
+            OutlinedTextField(
+                skillSong,{skillSong=it},Modifier.fillMaxWidth(),
+                label={Text("Song used for application")},singleLine=true
+            )
+            Row(verticalAlignment=Alignment.CenterVertically){
+                Checkbox(songApplied,{songApplied=it})
+                Text("I can apply this skill successfully in the selected song")
+            }
+            OutlinedTextField(
+                songResult,{songResult=it},Modifier.fillMaxWidth(),
+                label={Text("Song application result")}
+            )
+
+            Text("Technique notes",style=MaterialTheme.typography.titleSmall)
+            OutlinedTextField(
+                technique,{technique=it},Modifier.fillMaxWidth(),
+                label={Text("Sticking, rebound, accents, execution")}
+            )
+
+            Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
+                Button(onClick={
+                    vm.setDrummingTargets(
+                        learnTarget.toIntOrNull()?:drum.learningTargetBpm,
+                        secureMin.toIntOrNull()?:drum.secureMinBpm,
+                        secureTarget.toIntOrNull()?:drum.secureTargetBpm,
+                        grooveTarget.toIntOrNull()?:drum.grooveTarget,
+                        fillTarget.toIntOrNull()?:drum.fillTarget
+                    )
+                    vm.setDrummingCriteria(
+                        learningBpm.toIntOrNull()?:0,
+                        secureBpm.toIntOrNull()?:0,
+                        grooves.toIntOrNull()?:0,
+                        fills.toIntOrNull()?:0,
+                        skillSong,
+                        songApplied,
+                        songResult
+                    )
+                    vm.setDrummingNotes(technique,groove,fill)
+                }){Text("Save skill evidence")}
+                OutlinedButton(
+                    onClick={vm.completeDrummingSkill()},
+                    enabled={vm.drummingCriteriaComplete() || drum.skillCompleted}
+                ){Text("Mark mastered")}
+            }
+
+            if(!vm.drummingCriteriaComplete() && !drum.skillCompleted){
+                Text("Still needed:")
+                vm.drummingMissingCriteria().forEach{Text("• "+it,Modifier.padding(vertical=2.dp))}
+            }else if(!drum.skillCompleted){
+                Text("✓ All five evidence criteria are complete. The skill is ready for mastery review.")
+            }
+
             Text("Confidence: "+drum.confidence+"/5")
             Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){
                 (1..5).forEach{i->FilterChip(drum.confidence==i,{vm.setDrummingConfidence(i)},label={Text(i.toString())})}
             }
-            OutlinedTextField(technique,{technique=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("How it is played / technique notes")})
-            OutlinedTextField(groove,{groove=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Groove application")})
-            OutlinedTextField(fill,{fill=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Fill application")})
-            Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
-                Button(onClick={vm.setDrummingNotes(technique,groove,fill)}){Text("Save notes")}
-                OutlinedButton(onClick={vm.completeDrummingSkill()}){Text("Skill mastered")}
-            }
-            Text(if(drum.skillCompleted)
-                "✓ Skill mastered. Next planned skill: "+vm.state.growth.nextDrummingSkill
-                else
-                "Do not mark mastered just because the exercise was attempted. Mark it when you can play it cleanly and apply it.")
             if(vm.state.growth.drummingHistory.isNotEmpty()){
                 Text("Mastered skills: "+vm.state.growth.drummingHistory.joinToString(" → "))
             }
@@ -450,7 +568,7 @@ fun GrowthScreen(vm:AppViewModel){
 
         SectionCard("Coffee Quality — assistant-led"){
             Text("Stage: "+coffee.currentStage)
-            Text("Lesson "+coffee.lessonNumber+": "+coffee.currentLesson,style=MaterialTheme.typography.titleMedium)
+            Text("Current lesson "+coffee.lessonNumber+"/"+coffee.roadmap.size+": "+coffee.currentLesson,style=MaterialTheme.typography.titleMedium)
             Text("Method: Learn → Practice → Apply → Review")
             Text("Status: "+coffee.lessonStatus)
             Row(horizontalArrangement=Arrangement.spacedBy(5.dp),modifier=Modifier.padding(vertical=5.dp)){
@@ -461,9 +579,44 @@ fun GrowthScreen(vm:AppViewModel){
             OutlinedTextField(learn,{learn=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("What I learned")})
             OutlinedTextField(practice,{practice=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Practice result")})
             OutlinedTextField(application,{application=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Coffee-station application")})
-            Button(onClick={vm.setCoffeeNotes(learn,practice,application)}){Text("Save coffee lesson")}
+            Button(onClick={
+                if(vm.saveCoffeeLesson(learn,practice,application)){
+                    learn=""
+                    practice=""
+                    application=""
+                }
+            }){Text("Save lesson to history")}
+
+            if(coffee.history.isNotEmpty()){
+                Text("Saved lesson history",style=MaterialTheme.typography.titleMedium,modifier=Modifier.padding(top=10.dp))
+                coffee.history.asReversed().forEach{record->
+                    val selected=selectedCoffeeId==record.id
+                    OutlinedButton(onClick={
+                        selectedCoffeeId=if(selected)null else record.id
+                    },modifier=Modifier.fillMaxWidth()){
+                        Text(
+                            "Lesson "+record.lessonNumber+" • "+record.topic+
+                                " • "+record.date
+                        )
+                    }
+                    if(selected){
+                        Text("Status: "+record.status)
+                        if(record.learnNotes.isNotBlank())Text("What I learned: "+record.learnNotes)
+                        if(record.practiceResult.isNotBlank())Text("Practice: "+record.practiceResult)
+                        if(record.applicationResult.isNotBlank())Text("Station application: "+record.applicationResult)
+                    }
+                }
+            }else{
+                Text("No lessons saved yet. Lesson records will appear here after you actually study a topic.")
+            }
+
             Text("Course roadmap",style=MaterialTheme.typography.titleMedium,modifier=Modifier.padding(top=8.dp))
-            coffee.roadmap.forEach{Text(it,Modifier.padding(vertical=2.dp))}
+            coffee.roadmap.forEachIndexed{index,item->
+                Text(
+                    item,
+                    Modifier.padding(vertical=2.dp)
+                )
+            }
         }
 
         SectionCard("Personal skill roadmap"){
@@ -490,7 +643,7 @@ fun GrowthScreen(vm:AppViewModel){
         }
 
         SectionCard("ChatGPT growth coach"){
-            Text("The app records your progress. ChatGPT can use this brief to recommend what you should learn next based on your personal and career goals.")
+            Text("The app records your evidence. ChatGPT can use this brief to recommend what you should learn next based on your personal and career goals.")
             OutlinedTextField(
                 recommendation,{recommendation=it},
                 Modifier.fillMaxWidth(),
