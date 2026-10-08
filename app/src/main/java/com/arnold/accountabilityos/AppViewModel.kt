@@ -254,7 +254,7 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         return true
     }
 
-    fun coffeeHistory():List<CoffeeLessonRecord>=state.growth.coffee.history
+    fun coffeeHistory(): List<CoffeeLessonRecord> = state.growth.coffee.history
 
     fun coffeeStudyMethod()="Learn → Practice → Apply → Review. Save each completed topic to its own lesson record; the form then resets for the next topic."
 
