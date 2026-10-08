@@ -156,6 +156,14 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         it.copy(drumming=it.drumming.copy(confidence=v.coerceIn(0,5)))
     }
 
+    fun startNextDrummingSkill()=updateGrowth{g->
+        val next=g.nextDrummingSkill
+        g.copy(drumming=DrummingWeek(
+            weekKey=g.drumming.weekKey,
+            skill=next
+        ))
+    }
+
     fun completeDrummingSkill(){
         if(!drummingCriteriaComplete())return
         updateGrowth{
