@@ -185,7 +185,7 @@ class AppViewModel(app: Application):AndroidViewModel(app){
 
     fun drummingPracticeHistory(): List<DrummingPracticeRecord> = state.growth.drummingPracticeHistory
 
-    fun startNextDrummingSkill()=updateGrowth{g->
+    fun startNextDrummingSkill(): Unit = updateGrowth { g ->
         val next=g.nextDrummingSkill
         g.copy(drumming=DrummingWeek(
             weekKey=g.drumming.weekKey,
