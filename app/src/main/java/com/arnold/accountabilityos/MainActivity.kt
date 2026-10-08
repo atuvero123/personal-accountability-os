@@ -532,9 +532,9 @@ fun GrowthScreen(vm:AppViewModel){
                     vm.setDrummingNotes(technique,groove,fill)
                 }){Text("Save skill evidence")}
                 OutlinedButton(
-                    onClick={ { vm.completeDrummingSkill(); Unit } },
-                    enabled=vm.drummingCriteriaComplete() || drum.skillCompleted
-                ){Text("Mark mastered")}
+                    onClick={vm::completeDrummingSkill},
+                    enabled=vm.drummingCriteriaComplete() && !drum.skillCompleted
+                ){Text(if(drum.skillCompleted)"Mastered" else "Mark mastered")}
             }
 
             if(!vm.drummingCriteriaComplete() && !drum.skillCompleted){
@@ -551,7 +551,7 @@ fun GrowthScreen(vm:AppViewModel){
             if(vm.state.growth.drummingHistory.isNotEmpty()){
                 Text("Mastered skills: "+vm.state.growth.drummingHistory.joinToString(" → "))
             }
-            Text("Next skill candidate: "+vm.state.growth.nextDrummingSkill)
+            Text("Next skill after mastery: "+vm.state.growth.nextDrummingSkill)
         }
 
         SectionCard("This week's worship song"){
