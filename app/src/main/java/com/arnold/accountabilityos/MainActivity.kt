@@ -672,8 +672,8 @@ fun ReviewScreen(vm:AppViewModel){
         SectionCard("Finance diagnostics"){vm.financeDiagnostics().forEach{Text("• "+it,Modifier.padding(vertical=3.dp))}}
         SectionCard("Growth diagnostics"){
             Text("Exercise: "+vm.state.growth.exercise.completedSessions+" session(s) logged this week.")
-            Text("Drumming: "+vm.drummingProgressLabel()+" • confidence "+vm.state.growth.drumming.confidence+"/5")
-            Text("Coffee: "+vm.state.growth.coffee.lessonStatus)
+            Text("Drumming: "+vm.state.growth.drumming.skill+" • "+vm.drummingProgressLabel()+" • evidence "+vm.drummingCriteriaProgress()+"/5 • confidence "+vm.state.growth.drumming.confidence+"/5")
+            Text("Coffee: lesson "+vm.state.growth.coffee.lessonNumber+"/"+vm.state.growth.coffee.roadmap.size+" • "+vm.state.growth.coffee.lessonStatus+" • "+vm.state.growth.coffee.history.size+" saved lesson(s)")
             vm.state.growth.otherSkills.forEach{Text("• "+it.name+": "+it.progress+"%")}
         }
         SectionCard("Daily report"){
