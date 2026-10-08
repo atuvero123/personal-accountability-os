@@ -166,6 +166,25 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         it.copy(drumming=it.drumming.copy(confidence=v.coerceIn(0,5)))
     }
 
+    fun logDrummingPractice(bpm:Int,focus:String,result:String,nextAdjustment:String){
+        updateGrowth{g->
+            val d=g.drumming
+            g.copy(
+                drummingPracticeHistory=g.drummingPracticeHistory+DrummingPracticeRecord(
+                    id=UUID.randomUUID().toString(),
+                    date=todayKey(),
+                    skill=d.skill,
+                    bpm=bpm.coerceAtLeast(0),
+                    focus=focus.trim(),
+                    result=result.trim(),
+                    nextAdjustment=nextAdjustment.trim()
+                )
+            )
+        }
+    }
+
+    fun drummingPracticeHistory():List<DrummingPracticeRecord>=state.growth.drummingPracticeHistory
+
     fun startNextDrummingSkill()=updateGrowth{g->
         val next=g.nextDrummingSkill
         g.copy(drumming=DrummingWeek(
@@ -177,11 +196,26 @@ class AppViewModel(app: Application):AndroidViewModel(app){
     fun completeDrummingSkill(){
         if(!drummingCriteriaComplete())return
         updateGrowth{
-            val current=it.drumming.skill
+            val d=it.drumming
+            val current=d.skill
             val next=nextSkillAfter(current)
+            val alreadyRecorded=it.drummingMasteryHistory.any{record->record.skill==current}
+            val masteryRecord=DrummingMasteryRecord(
+                id=UUID.randomUUID().toString(),
+                skill=current,
+                date=todayKey(),
+                learningBpm=d.learningBpm,
+                secureBpm=d.secureBpm,
+                groovesCompleted=d.groovesCompleted,
+                fillsCompleted=d.fillsCompleted,
+                song=d.skillSong,
+                songResult=d.skillSongResult,
+                confidence=d.confidence
+            )
             it.copy(
-                drumming=it.drumming.copy(skillCompleted=true,skillProgress=4),
+                drumming=d.copy(skillCompleted=true,skillProgress=4),
                 drummingHistory=(it.drummingHistory+current).distinct(),
+                drummingMasteryHistory=if(alreadyRecorded)it.drummingMasteryHistory else it.drummingMasteryHistory+masteryRecord,
                 nextDrummingSkill=next
             )
         }
@@ -193,6 +227,21 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         val done=g.drumming.completedSections.toMutableList()
         if(done.contains(section))done.remove(section)else done.add(section)
         g.copy(drumming=g.drumming.copy(completedSections=done))
+    }
+
+    fun saveWorshipWeek(){
+        val d=state.growth.drumming
+        if(d.worshipSong.isBlank())return
+        updateGrowth{g->
+            val record=WorshipSongRecord(
+                id=UUID.randomUUID().toString(),
+                weekKey=weekKey(),
+                song=d.worshipSong.trim(),
+                completedSections=d.completedSections,
+                date=todayKey()
+            )
+            g.copy(worshipHistory=g.worshipHistory+record)
+        }
     }
 
     fun setDrummingNotes(technique:String,groove:String,fill:String)=updateGrowth{g->
