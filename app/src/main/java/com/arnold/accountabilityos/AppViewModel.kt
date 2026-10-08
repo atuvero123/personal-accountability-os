@@ -428,8 +428,7 @@ class AppViewModel(app: Application):AndroidViewModel(app){
             }.sumOf{it.amount}),
             "Exercise: "+state.growth.exercise.completedSessions+" sessions logged this week.",
             "Drumming: "+state.growth.drumming.skill+" • "+drummingProgressLabel()+" • confidence "+state.growth.drumming.confidence+"/5"
-        ).joinToString("
-")
+        ).joinToString("\n")
     }
 
     fun growthBrief():String{
@@ -442,8 +441,7 @@ class AppViewModel(app: Application):AndroidViewModel(app){
             "Coffee: "+g.coffee.currentLesson+" • status "+g.coffee.lessonStatus,
             "Other skills: "+g.otherSkills.joinToString("; "){it.name+" ("+it.progress+"%, "+it.stage+")"}.ifBlank{"none"},
             "Previous ChatGPT growth recommendation: "+g.chatgptGrowthRecommendation.ifBlank{"none"}
-        ).joinToString("
-")
+        ).joinToString("\n")
     }
 
     private fun defaultTasks()=listOf(
