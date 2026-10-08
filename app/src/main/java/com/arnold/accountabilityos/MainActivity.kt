@@ -554,7 +554,7 @@ fun GrowthScreen(vm:AppViewModel){
             Text("Next skill after mastery: "+vm.state.growth.nextDrummingSkill)
             if(drum.skillCompleted && vm.state.growth.nextDrummingSkill.isNotBlank()){
                 Button(
-                    onClick={vm.startNextDrummingSkill},
+                    onClick={vm::startNextDrummingSkill},
                     modifier=Modifier.fillMaxWidth()
                 ){Text("Start "+vm.state.growth.nextDrummingSkill)}
             }
