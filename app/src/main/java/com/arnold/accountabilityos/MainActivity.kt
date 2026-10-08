@@ -395,6 +395,12 @@ fun GrowthScreen(vm:AppViewModel){
     var nextSkill by remember{mutableStateOf("")}
     var recommendation by remember{mutableStateOf(vm.state.growth.chatgptGrowthRecommendation)}
     var selectedCoffeeId by remember{mutableStateOf<String?>(null)}
+    var selectedMasteryId by remember{mutableStateOf<String?>(null)}
+    var selectedPracticeId by remember{mutableStateOf<String?>(null)}
+    var practiceBpm by remember(drum.weekKey,drum.skill){mutableStateOf("")}
+    var practiceFocus by remember(drum.weekKey,drum.skill){mutableStateOf("")}
+    var practiceResult by remember(drum.weekKey,drum.skill){mutableStateOf("")}
+    var practiceNext by remember(drum.weekKey,drum.skill){mutableStateOf("")}
     var masteryMessage by remember(drum.weekKey,drum.skill){mutableStateOf("")}
     val context=LocalContext.current
 
@@ -583,6 +589,84 @@ fun GrowthScreen(vm:AppViewModel){
             }
         }
 
+        SectionCard("Drumming practice log"){
+            Text("Record real practice sessions so progress is based on evidence, not memory.",style=MaterialTheme.typography.bodyLarge)
+            Row(horizontalArrangement=Arrangement.spacedBy(5.dp)){
+                OutlinedTextField(
+                    practiceBpm,{practiceBpm=it},Modifier.weight(1f),
+                    label={Text("BPM")},singleLine=true
+                )
+                OutlinedTextField(
+                    practiceFocus,{practiceFocus=it},Modifier.weight(1f),
+                    label={Text("Focus")},singleLine=true
+                )
+            }
+            OutlinedTextField(
+                practiceResult,{practiceResult=it},Modifier.fillMaxWidth(),
+                label={Text("What improved / what happened")}
+            )
+            OutlinedTextField(
+                practiceNext,{practiceNext=it},Modifier.fillMaxWidth(),
+                label={Text("Next adjustment")}
+            )
+            Button(onClick={
+                vm.logDrummingPractice(
+                    practiceBpm.toIntOrNull()?:0,
+                    practiceFocus,
+                    practiceResult,
+                    practiceNext
+                )
+                practiceBpm=""
+                practiceFocus=""
+                practiceResult=""
+                practiceNext=""
+            }){Text("Save practice session")}
+
+            if(vm.state.growth.drummingPracticeHistory.isNotEmpty()){
+                Text("Recent practice",style=MaterialTheme.typography.titleMedium,modifier=Modifier.padding(top=10.dp))
+                vm.state.growth.drummingPracticeHistory.asReversed().take(5).forEach{record->
+                    val selected=selectedPracticeId==record.id
+                    OutlinedButton(
+                        onClick={selectedPracticeId=if(selected)null else record.id},
+                        modifier=Modifier.fillMaxWidth()
+                    ){
+                        Text(record.date+" • "+record.skill+" • "+record.bpm+" BPM")
+                    }
+                    if(selected){
+                        if(record.focus.isNotBlank())Text("Focus: "+record.focus)
+                        if(record.result.isNotBlank())Text("Result: "+record.result)
+                        if(record.nextAdjustment.isNotBlank())Text("Next: "+record.nextAdjustment)
+                    }
+                }
+            }else{
+                Text("No practice sessions recorded yet.")
+            }
+        }
+
+        SectionCard("Mastered skill history"){
+            if(vm.state.growth.drummingMasteryHistory.isEmpty()){
+                Text("No detailed mastery records yet. They will be saved when a skill is mastered.")
+            }else{
+                vm.state.growth.drummingMasteryHistory.asReversed().forEach{record->
+                    val selected=selectedMasteryId==record.id
+                    OutlinedButton(
+                        onClick={selectedMasteryId=if(selected)null else record.id},
+                        modifier=Modifier.fillMaxWidth()
+                    ){
+                        Text(record.skill+" • mastered "+record.date+" • confidence "+record.confidence+"/5")
+                    }
+                    if(selected){
+                        Text("Learning: "+record.learningBpm+" BPM")
+                        Text("Secure: "+record.secureBpm+" BPM")
+                        Text("Grooves: "+record.groovesCompleted)
+                        Text("Fills: "+record.fillsCompleted)
+                        Text("Song: "+record.song.ifBlank{"Not recorded"})
+                        if(record.songResult.isNotBlank())Text("Song result: "+record.songResult)
+                    }
+                }
+            }
+        }
+
         SectionCard("This week's worship song"){
             OutlinedTextField(drum.worshipSong,{vm.setWorshipSong(it)},Modifier.fillMaxWidth(),label={Text("Song title")},singleLine=true)
             Text("Goal: learn section by section and be able to play through by Sunday.")
@@ -594,6 +678,21 @@ fun GrowthScreen(vm:AppViewModel){
                 )
             }
             Text("Sections complete: "+drum.completedSections.size+"/"+drum.worshipSections.size)
+            Button(
+                onClick={vm::saveWorshipWeek},
+                enabled=drum.worshipSong.isNotBlank(),
+                modifier=Modifier.fillMaxWidth()
+            ){Text("Save this worship week")}
+
+            if(vm.state.growth.worshipHistory.isNotEmpty()){
+                Text("Previous worship weeks",style=MaterialTheme.typography.titleMedium,modifier=Modifier.padding(top=10.dp))
+                vm.state.growth.worshipHistory.asReversed().take(6).forEach{record->
+                    Text(
+                        record.date+" • "+record.song+" • "+record.completedSections.size+"/"+drum.worshipSections.size+" sections",
+                        Modifier.padding(vertical=2.dp)
+                    )
+                }
+            }
         }
 
         SectionCard("Coffee Quality — assistant-led"){
