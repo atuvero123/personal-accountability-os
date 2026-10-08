@@ -19,7 +19,7 @@ class AppViewModel(app: Application):AndroidViewModel(app){
     var state by mutableStateOf(store.load()); private set
     var usageRows by mutableStateOf<List<UsageRow>>(emptyList()); private set
 
-    init{ensureToday();ensureGrowthWeek();refreshUsage()}
+    init{ensureToday();ensureGrowthWeek();ensureDrummingSkillLink();refreshUsage()}
 
     fun todayKey()=LocalDate.now().toString()
     fun today():DayState{ensureToday();return state.days[todayKey()]!!}
@@ -53,6 +53,14 @@ class AppViewModel(app: Application):AndroidViewModel(app){
                     nextAdjustment=""
                 )
             )))
+        }
+    }
+
+    private fun ensureDrummingSkillLink(){
+        val d=state.growth.drumming
+        val expected=nextSkillAfter(d.skill)
+        if(state.growth.nextDrummingSkill!=expected && !d.skillCompleted){
+            save(state.copy(growth=state.growth.copy(nextDrummingSkill=expected)))
         }
     }
 
