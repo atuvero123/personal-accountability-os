@@ -183,7 +183,7 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         }
     }
 
-    fun drummingPracticeHistory():List<DrummingPracticeRecord>=state.growth.drummingPracticeHistory
+    fun drummingPracticeHistory(): List<DrummingPracticeRecord> = state.growth.drummingPracticeHistory
 
     fun startNextDrummingSkill()=updateGrowth{g->
         val next=g.nextDrummingSkill
