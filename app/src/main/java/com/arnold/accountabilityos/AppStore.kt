@@ -8,5 +8,9 @@ class AppStore(context:Context){
     private val prefs=context.getSharedPreferences("accountability_os",Context.MODE_PRIVATE)
     private val json=Json{ignoreUnknownKeys=true;encodeDefaults=true}
     fun load():AppState=prefs.getString("state",null)?.let{runCatching{json.decodeFromString<AppState>(it)}.getOrNull()}?:AppState()
-    fun save(state:AppState){prefs.edit().putString("state",json.encodeToString(state)).apply()}
+    fun save(state:AppState){
+        // Use a synchronous commit so a just-saved finance balance or lesson is
+        // definitely on disk before the user leaves/reopens the app.
+        prefs.edit().putString("state",json.encodeToString(state)).commit()
+    }
 }

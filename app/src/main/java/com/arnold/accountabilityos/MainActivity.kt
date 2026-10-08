@@ -272,6 +272,7 @@ fun FinanceScreen(vm:AppViewModel){
                         vm.updateAccount(a.id,balanceText.toDoubleOrNull()?:a.balance)
                         notify(a.name+" balance saved.")
                     }){Text("Save "+a.name)}
+                    Text("Saved balance: "+ugx(vm.state.finance.accounts.firstOrNull{it.id==a.id}?.balance?:0.0),style=MaterialTheme.typography.bodySmall)
                 }
                 Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
                     Button(onClick={vm.addBalanceCheck("Morning","");notify("Morning balance check recorded.")}){Text("Morning check")}
@@ -371,9 +372,9 @@ fun GrowthScreen(vm:AppViewModel){
     var technique by remember(drum.weekKey){mutableStateOf(drum.techniqueNote)}
     var groove by remember(drum.weekKey){mutableStateOf(drum.grooveApplication)}
     var fill by remember(drum.weekKey){mutableStateOf(drum.fillApplication)}
-    var learn by remember{mutableStateOf(coffee.learnNotes)}
-    var practice by remember{mutableStateOf(coffee.practiceResult)}
-    var application by remember{mutableStateOf(coffee.applicationResult)}
+    var learn by remember(coffee.learnNotes){mutableStateOf(coffee.learnNotes)}
+    var practice by remember(coffee.practiceResult){mutableStateOf(coffee.practiceResult)}
+    var application by remember(coffee.applicationResult){mutableStateOf(coffee.applicationResult)}
     var exerciseFeedback by remember{mutableStateOf(exercise.feedback)}
     var skillName by remember{mutableStateOf("")}
     var skillDomain by remember{mutableStateOf("")}
@@ -461,7 +462,8 @@ fun GrowthScreen(vm:AppViewModel){
             OutlinedTextField(learn,{learn=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("What I learned")})
             OutlinedTextField(practice,{practice=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Practice result")})
             OutlinedTextField(application,{application=it},Modifier.fillMaxWidth().padding(vertical=2.dp),label={Text("Coffee-station application")})
-            Button(onClick={vm.setCoffeeNotes(learn,practice,application)}){Text("Save coffee lesson")}
+            Button(onClick={vm.saveCoffeeLesson(learn,practice,application)}){Text("Save coffee lesson")}
+            Text("Saved lesson data: "+if(learn.isNotBlank()||practice.isNotBlank()||application.isNotBlank())"Yes — notes are stored locally." else "No notes saved yet.")
             Text("Course roadmap",style=MaterialTheme.typography.titleMedium,modifier=Modifier.padding(top=8.dp))
             coffee.roadmap.forEach{Text(it,Modifier.padding(vertical=2.dp))}
         }
