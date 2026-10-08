@@ -558,12 +558,15 @@ class AppViewModel(app: Application):AndroidViewModel(app){
 
     fun growthBrief():String{
         val g=state.growth
+        val d=g.drumming
         return listOf(
             "Personal Growth Brief — "+todayKey(),
             "Life goals: spiritual maturity, physical fitness, drumming mastery, coffee quality, work/career growth and financial stability.",
             "Exercise: week "+g.exercise.weekNumber+" • "+g.exercise.completedSessions+" sessions completed. Feedback: "+g.exercise.feedback.ifBlank{"none"},
-            "Drumming: "+g.drumming.skill+" • "+drummingProgressLabel()+" • confidence "+g.drumming.confidence+"/5 • completed="+g.drumming.skillCompleted,
-            "Coffee: "+g.coffee.currentLesson+" • status "+g.coffee.lessonStatus,
+            "Drumming: "+d.skill+" • "+drummingProgressLabel()+" • evidence "+drummingCriteriaProgress()+"/5 • confidence "+d.confidence+"/5",
+            "Drumming evidence: Learn "+d.learningBpm+"/"+d.learningTargetBpm+" BPM; Secure "+d.secureBpm+"/"+d.secureTargetBpm+" BPM; Groove "+d.groovesCompleted+"/"+d.grooveTarget+"; Fills "+d.fillsCompleted+"/"+d.fillTarget+"; Song applied="+d.skillSongApplied,
+            "Mastered drumming history: "+g.drummingHistory.joinToString(" → ").ifBlank{"none"},
+            "Coffee: current lesson "+g.coffee.lessonNumber+" — "+g.coffee.currentLesson+" • status "+g.coffee.lessonStatus+" • saved lessons "+g.coffee.history.size,
             "Other skills: "+g.otherSkills.joinToString("; "){it.name+" ("+it.progress+"%, "+it.stage+")"}.ifBlank{"none"},
             "Previous ChatGPT growth recommendation: "+g.chatgptGrowthRecommendation.ifBlank{"none"}
         ).joinToString("\n")
