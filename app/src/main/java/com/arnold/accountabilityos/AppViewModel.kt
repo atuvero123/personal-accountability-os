@@ -64,6 +64,15 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         }
     }
 
+    private fun nextSkillAfter(skill:String):String=when(skill){
+        "5-stroke roll"->"Single paradiddle"
+        "Single paradiddle"->"6-stroke roll"
+        "6-stroke roll"->"Double paradiddle"
+        "Double paradiddle"->"Flam taps"
+        "Flam taps"->"Groove integration — review with ChatGPT"
+        else->"Next skill — review with ChatGPT"
+    }
+
     private fun updateGrowth(f:(GrowthState)->GrowthState){
         ensureGrowthWeek()
         save(state.copy(growth=f(state.growth)))
@@ -169,13 +178,7 @@ class AppViewModel(app: Application):AndroidViewModel(app){
         if(!drummingCriteriaComplete())return
         updateGrowth{
             val current=it.drumming.skill
-            val next=when(current){
-                "5-stroke roll"->"Single paradiddle"
-                "Single paradiddle"->"6-stroke roll"
-                "6-stroke roll"->"Double paradiddle"
-                "Double paradiddle"->"Flam taps"
-                else->"Next skill — review with ChatGPT"
-            }
+            val next=nextSkillAfter(current)
             it.copy(
                 drumming=it.drumming.copy(skillCompleted=true,skillProgress=4),
                 drummingHistory=(it.drummingHistory+current).distinct(),
