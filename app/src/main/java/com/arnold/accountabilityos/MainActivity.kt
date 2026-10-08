@@ -552,6 +552,12 @@ fun GrowthScreen(vm:AppViewModel){
                 Text("Mastered skills: "+vm.state.growth.drummingHistory.joinToString(" → "))
             }
             Text("Next skill after mastery: "+vm.state.growth.nextDrummingSkill)
+            if(drum.skillCompleted && vm.state.growth.nextDrummingSkill.isNotBlank()){
+                Button(
+                    onClick={vm.startNextDrummingSkill},
+                    modifier=Modifier.fillMaxWidth()
+                ){Text("Start "+vm.state.growth.nextDrummingSkill)}
+            }
         }
 
         SectionCard("This week's worship song"){
