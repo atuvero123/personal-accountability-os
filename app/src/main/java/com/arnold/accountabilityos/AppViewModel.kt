@@ -91,13 +91,14 @@ class AppViewModel(app: Application):AndroidViewModel(app){
 
     fun drummingProgressLabel():String{
         val d=state.growth.drumming
-        if(d.skillCompleted)return "5 • Mastered"
-        return when(drummingCriteriaProgress()){
-            0->"1 • Learn / technique"
-            1->"2 • Technique secure"
-            2->"3 • Groove application"
-            3->"4 • Fills"
-            else->"5 • Song application / ready"
+        if(d.skillCompleted)return "6 • Mastered"
+        return when{
+            d.learningBpm<d.learningTargetBpm->"1 • Learn / technique"
+            d.secureBpm<d.secureTargetBpm->"2 • Secure / controlled range"
+            d.groovesCompleted<d.grooveTarget->"3 • Groove application"
+            d.fillsCompleted<d.fillTarget->"4 • Fills / variations"
+            !d.skillSongApplied->"5 • Song application"
+            else->"5 • Ready for mastery"
         }
     }
 
