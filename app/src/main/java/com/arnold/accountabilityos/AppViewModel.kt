@@ -43,16 +43,8 @@ class AppViewModel(app: Application):AndroidViewModel(app){
 
     private fun ensureGrowthWeek(){
         val key=weekKey()
-        if(state.growth.drumming.weekKey!=key){
+        if(state.growth.exercise.weekKey!=key){
             save(state.copy(growth=state.growth.copy(
-                drumming=state.growth.drumming.copy(
-                    weekKey=key,
-                    skill=state.growth.nextDrummingSkill,
-                    skillProgress=0,
-                    completedSections=emptyList(),
-                    skillCompleted=false,
-                    confidence=0
-                ),
                 exercise=state.growth.exercise.copy(
                     weekKey=key,
                     completedSessions=0,
